@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - LLM API</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <nav class="navbar">
+                <h1>管理后台</h1>
+                <div class="nav-links">
+                    <span id="adminUsername"></span>
+                    <button id="logoutBtn" class="btn btn-sm">退出</button>
+                </div>
+            </nav>
+        </header>
+
+        <main>
+            <div class="tabs">
+                <button class="tab active" data-tab="users">用户管理</button>
+                <button class="tab" data-tab="apikeys">API Keys</button>
+                <button class="tab" data-tab="usage">用量统计</button>
+            </div>
+
+            <!-- 用户管理 -->
+            <section id="users-tab" class="tab-content active">
+                <div class="section-header">
+                    <h2>用户列表</h2>
+                    <button id="createUserBtn" class="btn btn-primary">创建用户</button>
+                </div>
+                <div id="usersList" class="data-table">
+                    <!-- Users will be loaded here -->
+                </div>
+            </section>
+
+            <!-- API Keys -->
+            <section id="apikeys-tab" class="tab-content">
+                <div class="section-header">
+                    <h2>API Keys</h2>
+                    <button id="createApiKeyBtn" class="btn btn-primary">创建 API Key</button>
+                </div>
+                <div id="apiKeysList" class="data-table">
+                    <!-- API Keys will be loaded here -->
+                </div>
+            </section>
+
+            <!-- 用量统计 -->
+            <section id="usage-tab" class="tab-content">
+                <div class="section-header">
+                    <h2>用量统计</h2>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>总请求数</h3>
+                        <p class="stat-value" id="totalRequests">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>总 Token 数</h3>
+                        <p class="stat-value" id="totalTokens">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>总费用</h3>
+                        <p class="stat-value" id="totalCost">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>用户数</h3>
+                        <p class="stat-value" id="totalUsers">-</p>
+                    </div>
+                </div>
+
+                <!-- 上游 API 用量 -->
+                <div class="section-header" style="margin-top: 24px;">
+                    <h2>上游 API 用量</h2>
+                </div>
+                <div id="upstreamUsage" class="data-table">
+                    <p class="empty">加载中...</p>
+                </div>
+
+                <div id="usageList" class="data-table">
+                    <!-- Usage logs will be loaded here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 创建用户 Modal -->
+    <div id="createUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>创建用户</h2>
+            <form id="createUserForm">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label>请求次数限制</label>
+                    <input type="number" name="request_limit" value="1000" required>
+                </div>
+                <button type="submit" class="btn btn-primary">创建</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 创建 API Key Modal -->
+    <div id="createApiKeyModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>创建 API Key</h2>
+            <form id="createApiKeyForm">
+                <div class="form-group">
+                    <label>用户ID</label>
+                    <input type="number" name="user_id" required>
+                </div>
+                <div class="form-group">
+                    <label>Key 名称</label>
+                    <input type="text" name="key_name" placeholder="可选">
+                </div>
+                <button type="submit" class="btn btn-primary">创建</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        // 获取认证头
+        function getAuthHeader() {
+            const token = localStorage.getItem('token');
+            return token ? { 'Authorization': 'Bearer ' + token } : {};
+        }
+
+        // Check if admin is logged in
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user || !user.is_admin) {
+            window.location.href = '/login.html';
+        }
+
+        document.getElementById('adminUsername').textContent = user.username;
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab + '-tab').classList.add('active');
+
+                if (tab.dataset.tab === 'users') loadUsers();
+                if (tab.dataset.tab === 'apikeys') loadAPIKeys();
+                if (tab.dataset.tab === 'usage') {
+                    loadUsage();
+                    loadUpstreamUsage();
+                }
+            });
+        });
+
+        // Load Users
+        async function loadUsers() {
+            try {
+                const response = await fetch('/admin/users', { headers: getAuthHeader() });
+                const data = await response.json();
+
+                const container = document.getElementById('usersList');
+                if (!data.data || data.data.length === 0) {
+                    container.innerHTML = '<p class="empty">暂无用户</p>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>用户名</th>
+                                <th>额度限制</th>
+                                <th>已用次数</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.data.map(u => `
+                                <tr>
+                                    <td>${u.id}</td>
+                                    <td>${u.username}</td>
+                                    <td>${u.request_limit}</td>
+                                    <td>${u.request_count}</td>
+                                    <td>${u.created_at}</td>
+                                    <td>
+                                        <button class="btn btn-sm" onclick="editUser(${u.id}, ${u.request_limit})">编辑</button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">删除</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                console.error('Failed to load users:', error);
+            }
+        }
+
+        // Load API Keys
+        async function loadAPIKeys() {
+            try {
+                const response = await fetch('/admin/apikeys', { headers: getAuthHeader() });
+                const data = await response.json();
+
+                const container = document.getElementById('apiKeysList');
+                if (!data.data || data.data.length === 0) {
+                    container.innerHTML = '<p class="empty">暂无 API Keys</p>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>用户</th>
+                                <th>Key 名称</th>
+                                <th>Key 值</th>
+                                <th>状态</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.data.map(k => `
+                                <tr>
+                                    <td>${k.id}</td>
+                                    <td>${k.username || k.user_id}</td>
+                                    <td>${k.key_name || '-'}</td>
+                                    <td><code>${k.key_value}</code></td>
+                                    <td><span class="status ${k.is_active ? 'active' : 'inactive'}">${k.is_active ? '激活' : '禁用'}</span></td>
+                                    <td>${k.created_at}</td>
+                                    <td>
+                                        <button class="btn btn-sm" onclick="resetApiKey(${k.id})">重置</button>
+                                        <button class="btn btn-sm" onclick="toggleApiKey(${k.id})">${k.is_active ? '禁用' : '启用'}</button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteApiKey(${k.id})">删除</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                console.error('Failed to load API keys:', error);
+            }
+        }
+
+        // Load Usage
+        async function loadUsage() {
+            try {
+                const [statsRes, usageRes] = await Promise.all([
+                    fetch('/admin/stats', { headers: getAuthHeader() }),
+                    fetch('/admin/usage', { headers: getAuthHeader() })
+                ]);
+
+                const stats = await statsRes.json();
+                const usageData = await usageRes.json();
+
+                // Update stats
+                document.getElementById('totalRequests').textContent = stats.total_requests || 0;
+                document.getElementById('totalTokens').textContent = stats.total_tokens || 0;
+                document.getElementById('totalCost').textContent = '$ ' + (stats.total_cost || 0).toFixed(6);
+                document.getElementById('totalUsers').textContent = stats.total_users || 0;
+
+                // Render usage logs
+                const container = document.getElementById('usageList');
+                if (!usageData.data || usageData.data.length === 0) {
+                    container.innerHTML = '<p class="empty">暂无使用记录</p>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>用户ID</th>
+                                <th>API Key ID</th>
+                                <th>模型</th>
+                                <th>Token</th>
+                                <th>费用</th>
+                                <th>延迟(ms)</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${usageData.data.map(log => `
+                                <tr>
+                                    <td>${log.id}</td>
+                                    <td>${log.user_id}</td>
+                                    <td>${log.api_key_id}</td>
+                                    <td>${log.model}</td>
+                                    <td>${log.total_tokens}</td>
+                                    <td>${log.cost.toFixed(6)}</td>
+                                    <td>${log.latency_ms}</td>
+                                    <td>${log.created_at}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                console.error('Failed to load usage:', error);
+            }
+        }
+
+        // Load Upstream Usage
+        async function loadUpstreamUsage() {
+            try {
+                const response = await fetch('/admin/upstream-usage', { headers: getAuthHeader() });
+                const data = await response.json();
+
+                const container = document.getElementById('upstreamUsage');
+
+                if (data.base_resp && data.base_resp.status_code !== 0) {
+                    container.innerHTML = '<p class="empty">获取上游用量失败: ' + (data.base_resp.status_msg || '未知错误') + '</p>';
+                    return;
+                }
+
+                const modelRemains = data.model_remains || [];
+                if (modelRemains.length === 0) {
+                    container.innerHTML = '<p class="empty">暂无上游用量数据</p>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>模型</th>
+                                <th>剩余时间</th>
+                                <th>当前周期配额</th>
+                                <th>已使用</th>
+                                <th>使用率</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${modelRemains.map(m => {
+                                const usagePercent = m.current_interval_total_count > 0
+                                    ? (m.current_interval_usage_count / m.current_interval_total_count * 100).toFixed(1)
+                                    : 0;
+                                const remainsHours = (m.remains_time / 3600/1000).toFixed(1);
+                                return `
+                                    <tr>
+                                        <td>${m.model_name}</td>
+                                        <td>${remainsHours} 小时</td>
+                                        <td>${m.current_interval_total_count}</td>
+                                        <td>${m.current_interval_usage_count}</td>
+                                        <td>
+                                            <div class="progress-bar">
+                                                <div class="progress-fill" style="width: ${usagePercent}%"></div>
+                                            </div>
+                                            <span>${usagePercent}%</span>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                console.error('Failed to load upstream usage:', error);
+                document.getElementById('upstreamUsage').innerHTML = '<p class="empty">获取上游用量失败</p>';
+            }
+        }
+
+        // Create User
+        document.getElementById('createUserBtn').addEventListener('click', () => {
+            document.getElementById('createUserModal').style.display = 'block';
+        });
+
+        document.getElementById('createUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            try {
+                const response = await fetch('/admin/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+                    body: JSON.stringify({
+                        username: formData.get('username'),
+                        password: formData.get('password'),
+                        request_limit: parseInt(formData.get('request_limit'))
+                    })
+                });
+
+                if (response.ok) {
+                    alert('用户创建成功');
+                    document.getElementById('createUserModal').style.display = 'none';
+                    e.target.reset();
+                    loadUsers();
+                } else {
+                    alert('创建失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        });
+
+        // Create API Key
+        document.getElementById('createApiKeyBtn').addEventListener('click', () => {
+            document.getElementById('createApiKeyModal').style.display = 'block';
+        });
+
+        document.getElementById('createApiKeyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            try {
+                const response = await fetch('/admin/apikeys', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+                    body: JSON.stringify({
+                        user_id: parseInt(formData.get('user_id')),
+                        key_name: formData.get('key_name')
+                    })
+                });
+
+                if (response.ok) {
+                    alert('API Key 创建成功');
+                    document.getElementById('createApiKeyModal').style.display = 'none';
+                    e.target.reset();
+                    loadAPIKeys();
+                } else {
+                    alert('创建失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        });
+
+        // User operations
+        async function editUser(id, currentLimit) {
+            const newLimit = prompt('请输入新的请求次数限制:', currentLimit);
+            if (!newLimit) return;
+
+            try {
+                const response = await fetch(`/admin/users/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+                    body: JSON.stringify({ request_limit: parseInt(newLimit) })
+                });
+
+                if (response.ok) {
+                    loadUsers();
+                } else {
+                    alert('更新失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        }
+
+        async function deleteUser(id) {
+            if (!confirm('确定要删除这个用户吗？')) return;
+
+            try {
+                const response = await fetch(`/admin/users/${id}`, { method: 'DELETE', headers: getAuthHeader() });
+                if (response.ok) {
+                    loadUsers();
+                } else {
+                    alert('删除失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        }
+
+        // API Key operations
+        async function resetApiKey(id) {
+            if (!confirm('确定要重置这个 API Key 吗？')) return;
+
+            try {
+                const response = await fetch(`/admin/apikeys/${id}/reset`, { method: 'POST', headers: getAuthHeader() });
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('API Key 已重置: ' + data.key_value);
+                    loadAPIKeys();
+                } else {
+                    alert('重置失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        }
+
+        async function toggleApiKey(id) {
+            try {
+                const response = await fetch(`/admin/apikeys/${id}/toggle`, { method: 'POST', headers: getAuthHeader() });
+                if (response.ok) {
+                    loadAPIKeys();
+                } else {
+                    alert('操作失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        }
+
+        async function deleteApiKey(id) {
+            if (!confirm('确定要删除这个 API Key 吗？')) return;
+
+            try {
+                const response = await fetch(`/admin/apikeys/${id}`, { method: 'DELETE', headers: getAuthHeader() });
+                if (response.ok) {
+                    loadAPIKeys();
+                } else {
+                    alert('删除失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        }
+
+        // Modal close
+        document.querySelectorAll('.close').forEach(close => {
+            close.addEventListener('click', () => {
+                document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+            });
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        });
+
+        // Initial load
+        loadUsers();
+    </script>
+</body>
+</html>

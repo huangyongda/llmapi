@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go env:*)",
+      "Bash(export:*)",
+      "Bash(go build:*)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(mysql:*)"
+    ]
+  }
+}
