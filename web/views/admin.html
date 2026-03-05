@@ -104,7 +104,35 @@
                     <label>请求次数限制</label>
                     <input type="number" name="request_limit" value="1000" required>
                 </div>
+                <div class="form-group">
+                    <label>过期时间（留空表示永不过期）</label>
+                    <input type="datetime-local" name="expires_at">
+                </div>
                 <button type="submit" class="btn btn-primary">创建</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 编辑用户 Modal -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>编辑用户</h2>
+            <form id="editUserForm">
+                <input type="hidden" name="id" id="editUserId">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" name="username" id="editUsername" readonly>
+                </div>
+                <div class="form-group">
+                    <label>请求次数限制</label>
+                    <input type="number" name="request_limit" id="editRequestLimit" required>
+                </div>
+                <div class="form-group">
+                    <label>过期时间（留空表示永不过期）</label>
+                    <input type="datetime-local" name="expires_at" id="editExpiresAt">
+                </div>
+                <button type="submit" class="btn btn-primary">保存</button>
             </form>
         </div>
     </div>
@@ -136,6 +164,27 @@
             return token ? { 'Authorization': 'Bearer ' + token } : {};
         }
 
+        // 检查响应，如果 token 失效则跳转到登录页
+        async function checkResponse(response) {
+            if (response.status === 401) {
+                const data = await response.json();
+                if (data.error && (data.error.includes('token') || data.error.includes('Token'))) {
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('token');
+                    window.location.href = '/login.html';
+                    throw new Error('Token expired');
+                }
+            }
+            return response;
+        }
+
+        // 统一的 fetch 包装函数
+        async function adminFetch(url, options = {}) {
+            const response = await fetch(url, { ...options, headers: { ...getAuthHeader(), ...options.headers } });
+            await checkResponse(response);
+            return response;
+        }
+
         // Check if admin is logged in
         const user = JSON.parse(localStorage.getItem('user'));
         if (!user || !user.is_admin) {
@@ -143,6 +192,14 @@
         }
 
         document.getElementById('adminUsername').textContent = user.username;
+
+        // 分页变量
+        let usersPage = 1;
+        let usersPageSize = 10;
+        let usersTotal = 0;
+        let apiKeysPage = 1;
+        let apiKeysPageSize = 10;
+        let apiKeysTotal = 0;
 
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
@@ -164,8 +221,10 @@
         // Load Users
         async function loadUsers() {
             try {
-                const response = await fetch('/admin/users', { headers: getAuthHeader() });
+                const response = await adminFetch(`/admin/users?page=${usersPage}&page_size=${usersPageSize}`);
                 const data = await response.json();
+
+                usersTotal = data.total || 0;
 
                 const container = document.getElementById('usersList');
                 if (!data.data || data.data.length === 0) {
@@ -181,37 +240,58 @@
                                 <th>用户名</th>
                                 <th>额度限制</th>
                                 <th>已用次数</th>
+                                <th>过期时间</th>
+                                <th>状态</th>
                                 <th>创建时间</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.data.map(u => `
+                            ${data.data.map(u => {
+                                const isExpired = u.expires_at && new Date(u.expires_at) < new Date();
+                                const status = u.expires_at ? (isExpired ? '<span class="status inactive">已过期</span>' : '<span class="status active">正常</span>') : '<span class="status active">永不过期</span>';
+                                return `
                                 <tr>
                                     <td>${u.id}</td>
                                     <td>${u.username}</td>
                                     <td>${u.request_limit}</td>
                                     <td>${u.request_count}</td>
+                                    <td>${u.expires_at || '-'}</td>
+                                    <td>${status}</td>
                                     <td>${u.created_at}</td>
                                     <td>
-                                        <button class="btn btn-sm" onclick="editUser(${u.id}, ${u.request_limit})">编辑</button>
+                                        <button class="btn btn-sm" onclick="editUser(${u.id}, ${u.request_limit}, '${u.expires_at || ''}', '${u.username}')">编辑</button>
                                         <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">删除</button>
                                     </td>
                                 </tr>
-                            `).join('')}
+                            `}).join('')}
                         </tbody>
                     </table>
+                    <div class="pagination">
+                        <button class="btn btn-sm" onclick="changeUsersPage(${usersPage - 1})" ${usersPage <= 1 ? 'disabled' : ''}>上一页</button>
+                        <span>第 ${usersPage} / ${Math.ceil(usersTotal / usersPageSize)} 页</span>
+                        <button class="btn btn-sm" onclick="changeUsersPage(${usersPage + 1})" ${usersPage >= Math.ceil(usersTotal / usersPageSize) ? 'disabled' : ''}>下一页</button>
+                    </div>
                 `;
             } catch (error) {
                 console.error('Failed to load users:', error);
             }
         }
 
+        function changeUsersPage(newPage) {
+            const totalPages = Math.ceil(usersTotal / usersPageSize);
+            if (newPage < 1 || newPage > totalPages) return;
+            usersPage = newPage;
+            loadUsers();
+        }
+
         // Load API Keys
         async function loadAPIKeys() {
             try {
-                const response = await fetch('/admin/apikeys', { headers: getAuthHeader() });
+                const response = await adminFetch(`/admin/apikeys?page=${apiKeysPage}&page_size=${apiKeysPageSize}`);
                 const data = await response.json();
+
+                apiKeysTotal = data.total || 0;
 
                 const container = document.getElementById('apiKeysList');
                 if (!data.data || data.data.length === 0) {
@@ -250,18 +330,30 @@
                             `).join('')}
                         </tbody>
                     </table>
+                    <div class="pagination">
+                        <button class="btn btn-sm" onclick="changeAPIKeysPage(${apiKeysPage - 1})" ${apiKeysPage <= 1 ? 'disabled' : ''}>上一页</button>
+                        <span>第 ${apiKeysPage} / ${Math.ceil(apiKeysTotal / apiKeysPageSize)} 页</span>
+                        <button class="btn btn-sm" onclick="changeAPIKeysPage(${apiKeysPage + 1})" ${apiKeysPage >= Math.ceil(apiKeysTotal / apiKeysPageSize) ? 'disabled' : ''}>下一页</button>
+                    </div>
                 `;
             } catch (error) {
                 console.error('Failed to load API keys:', error);
             }
         }
 
+        function changeAPIKeysPage(newPage) {
+            const totalPages = Math.ceil(apiKeysTotal / apiKeysPageSize);
+            if (newPage < 1 || newPage > totalPages) return;
+            apiKeysPage = newPage;
+            loadAPIKeys();
+        }
+
         // Load Usage
         async function loadUsage() {
             try {
                 const [statsRes, usageRes] = await Promise.all([
-                    fetch('/admin/stats', { headers: getAuthHeader() }),
-                    fetch('/admin/usage', { headers: getAuthHeader() })
+                    adminFetch('/admin/stats'),
+                    adminFetch('/admin/usage')
                 ]);
 
                 const stats = await statsRes.json();
@@ -318,7 +410,7 @@
         // Load Upstream Usage
         async function loadUpstreamUsage() {
             try {
-                const response = await fetch('/admin/upstream-usage', { headers: getAuthHeader() });
+                const response = await adminFetch('/admin/upstream-usage');
                 const data = await response.json();
 
                 const container = document.getElementById('upstreamUsage');
@@ -377,6 +469,10 @@
 
         // Create User
         document.getElementById('createUserBtn').addEventListener('click', () => {
+            // 默认过期时间为7天后
+            const defaultExpiresAt = new Date();
+            defaultExpiresAt.setDate(defaultExpiresAt.getDate() + 7);
+            document.getElementById('createUserModal').querySelector('input[name="expires_at"]').value = defaultExpiresAt.toISOString().slice(0, 16);
             document.getElementById('createUserModal').style.display = 'block';
         });
 
@@ -384,15 +480,21 @@
             e.preventDefault();
             const formData = new FormData(e.target);
 
+            const expiresAt = formData.get('expires_at');
+            const requestBody = {
+                username: formData.get('username'),
+                password: formData.get('password'),
+                request_limit: parseInt(formData.get('request_limit'))
+            };
+            if (expiresAt) {
+                requestBody.expires_at = new Date(expiresAt).toISOString();
+            }
+
             try {
-                const response = await fetch('/admin/users', {
+                const response = await adminFetch('/admin/users', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-                    body: JSON.stringify({
-                        username: formData.get('username'),
-                        password: formData.get('password'),
-                        request_limit: parseInt(formData.get('request_limit'))
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
                 });
 
                 if (response.ok) {
@@ -418,9 +520,9 @@
             const formData = new FormData(e.target);
 
             try {
-                const response = await fetch('/admin/apikeys', {
+                const response = await adminFetch('/admin/apikeys', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         user_id: parseInt(formData.get('user_id')),
                         key_name: formData.get('key_name')
@@ -441,18 +543,46 @@
         });
 
         // User operations
-        async function editUser(id, currentLimit) {
-            const newLimit = prompt('请输入新的请求次数限制:', currentLimit);
-            if (!newLimit) return;
+        async function editUser(id, currentLimit, expiresAt, username) {
+            document.getElementById('editUserId').value = id;
+            document.getElementById('editUsername').value = username;
+            document.getElementById('editRequestLimit').value = currentLimit;
+
+            // 处理过期时间
+            if (expiresAt) {
+                // 将 "YYYY-MM-DD HH:MM:SS" 转换为 "YYYY-MM-DDTHH:MM" 格式
+                const date = new Date(expiresAt.replace(' ', 'T'));
+                document.getElementById('editExpiresAt').value = date.toISOString().slice(0, 16);
+            } else {
+                document.getElementById('editExpiresAt').value = '';
+            }
+
+            document.getElementById('editUserModal').style.display = 'block';
+        }
+
+        // 编辑用户表单提交
+        document.getElementById('editUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const userId = formData.get('id');
+
+            const expiresAt = formData.get('expires_at');
+            const requestBody = {
+                request_limit: parseInt(formData.get('request_limit'))
+            };
+            if (expiresAt) {
+                requestBody.expires_at = new Date(expiresAt).toISOString();
+            }
 
             try {
-                const response = await fetch(`/admin/users/${id}`, {
+                const response = await adminFetch(`/admin/users/${userId}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-                    body: JSON.stringify({ request_limit: parseInt(newLimit) })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
                 });
 
                 if (response.ok) {
+                    document.getElementById('editUserModal').style.display = 'none';
                     loadUsers();
                 } else {
                     alert('更新失败');
@@ -460,13 +590,13 @@
             } catch (error) {
                 alert('网络错误');
             }
-        }
+        });
 
         async function deleteUser(id) {
             if (!confirm('确定要删除这个用户吗？')) return;
 
             try {
-                const response = await fetch(`/admin/users/${id}`, { method: 'DELETE', headers: getAuthHeader() });
+                const response = await adminFetch(`/admin/users/${id}`, { method: 'DELETE' });
                 if (response.ok) {
                     loadUsers();
                 } else {
@@ -482,7 +612,7 @@
             if (!confirm('确定要重置这个 API Key 吗？')) return;
 
             try {
-                const response = await fetch(`/admin/apikeys/${id}/reset`, { method: 'POST', headers: getAuthHeader() });
+                const response = await adminFetch(`/admin/apikeys/${id}/reset`, { method: 'POST' });
                 const data = await response.json();
 
                 if (response.ok) {
@@ -498,7 +628,7 @@
 
         async function toggleApiKey(id) {
             try {
-                const response = await fetch(`/admin/apikeys/${id}/toggle`, { method: 'POST', headers: getAuthHeader() });
+                const response = await adminFetch(`/admin/apikeys/${id}/toggle`, { method: 'POST' });
                 if (response.ok) {
                     loadAPIKeys();
                 } else {
@@ -513,7 +643,7 @@
             if (!confirm('确定要删除这个 API Key 吗？')) return;
 
             try {
-                const response = await fetch(`/admin/apikeys/${id}`, { method: 'DELETE', headers: getAuthHeader() });
+                const response = await adminFetch(`/admin/apikeys/${id}`, { method: 'DELETE' });
                 if (response.ok) {
                     loadAPIKeys();
                 } else {

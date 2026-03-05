@@ -53,9 +53,10 @@ func (h *AdminHandler) GetUsers(c *gin.Context) {
 
 func (h *AdminHandler) CreateUser(c *gin.Context) {
 	var req struct {
-		Username     string `json:"username" binding:"required"`
-		Password     string `json:"password" binding:"required"`
-		RequestLimit int    `json:"request_limit"`
+		Username     string        `json:"username" binding:"required"`
+		Password     string        `json:"password" binding:"required"`
+		RequestLimit int           `json:"request_limit"`
+		ExpiresAt    *time.Time    `json:"expires_at"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -63,7 +64,13 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userService.CreateUser(req.Username, req.Password, req.RequestLimit, false)
+	// 如果未指定过期时间，默认7天后过期
+	if req.ExpiresAt == nil {
+		defaultExpiresAt := time.Now().Add(7 * 24 * time.Hour)
+		req.ExpiresAt = &defaultExpiresAt
+	}
+
+	user, err := h.userService.CreateUser(req.Username, req.Password, req.RequestLimit, false, req.ExpiresAt)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -80,7 +87,8 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	}
 
 	var req struct {
-		RequestLimit int `json:"request_limit"`
+		RequestLimit int          `json:"request_limit"`
+		ExpiresAt    *time.Time   `json:"expires_at"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -88,7 +96,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	if err := h.userService.UpdateUser(userID, req.RequestLimit); err != nil {
+	if err := h.userService.UpdateUser(userID, req.RequestLimit, req.ExpiresAt); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

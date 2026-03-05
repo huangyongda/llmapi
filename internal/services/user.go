@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -17,7 +18,7 @@ func NewUserService() *UserService {
 	return &UserService{}
 }
 
-func (s *UserService) CreateUser(username, password string, requestLimit int, isAdmin bool) (*models.User, error) {
+func (s *UserService) CreateUser(username, password string, requestLimit int, isAdmin bool, expiresAt *time.Time) (*models.User, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password: %w", err)
@@ -28,10 +29,18 @@ func (s *UserService) CreateUser(username, password string, requestLimit int, is
 		PasswordHash: string(hash),
 		RequestLimit: requestLimit,
 		IsAdmin:      isAdmin,
+		ExpiresAt:    expiresAt,
 	}
 
 	if err := database.DB.Create(user).Error; err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	// 自动创建 API Key，key_name 与用户名相同
+	apiKeyService := NewAPIKeyService()
+	if _, err := apiKeyService.CreateAPIKey(user.ID, username, nil); err != nil {
+		// API Key 创建失败不影响用户创建，但会记录错误
+		fmt.Printf("failed to create API key for user %s: %v\n", username, err)
 	}
 
 	return user, nil
@@ -68,10 +77,40 @@ func (s *UserService) GetAllUsers(page, pageSize int) ([]models.User, int64, err
 	return users, total, nil
 }
 
-func (s *UserService) UpdateUser(id int64, requestLimit int) error {
-	return database.DB.Model(&models.User{}).Where("id = ?", id).Updates(map[string]interface{}{
+func (s *UserService) UpdateUser(id int64, requestLimit int, expiresAt *time.Time) error {
+	// 先获取用户当前的信息
+	user, err := s.GetUserByID(id)
+	if err != nil {
+		return err
+	}
+
+	// 更新用户信息
+	updates := map[string]interface{}{
 		"request_limit": requestLimit,
-	}).Error
+	}
+	if expiresAt != nil || user.ExpiresAt != nil {
+		updates["expires_at"] = expiresAt
+	}
+
+	if err := database.DB.Model(&models.User{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+		return err
+	}
+
+	// 检查用户过期状态是否改变，同步更新 API Key 状态
+	// 用户过期：expiresAt 不为 nil 且早于当前时间
+	// 用户未过期：expiresAt 为 nil 或晚于当前时间
+	isExpired := expiresAt != nil && expiresAt.Before(time.Now())
+
+	// 如果用户之前的状态和现在的状态不同，才需要同步
+	wasExpired := user.ExpiresAt != nil && user.ExpiresAt.Before(time.Now())
+	if wasExpired != isExpired {
+		apiKeyService := NewAPIKeyService()
+		if err := apiKeyService.SyncAPIKeysStatusByUserID(id, isExpired); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *UserService) DeleteUser(id int64) error {
@@ -140,7 +179,7 @@ func (s *UserService) InitAdmin() error {
 		return nil
 	}
 
-	_, err := s.CreateUser(adminConfig.Username, adminConfig.Password, 0, true)
+	_, err := s.CreateUser(adminConfig.Username, adminConfig.Password, 0, true, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create admin: %w", err)
 	}

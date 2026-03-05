@@ -56,13 +56,18 @@ func (s *APIKeyService) GetAPIKeyByID(id int64) (*models.APIKey, error) {
 func (s *APIKeyService) GetAPIKeyByValue(keyValue string) (*models.APIKey, error) {
 	// 直接从数据库查询，获取完整的API Key信息
 	var apiKey models.APIKey
-	if err := database.DB.Where("key_value = ?", keyValue).First(&apiKey).Error; err != nil {
+	if err := database.DB.Preload("User").Where("key_value = ?", keyValue).First(&apiKey).Error; err != nil {
 		return nil, fmt.Errorf("API key not found: %w", err)
 	}
 
 	// 检查是否过期
 	if apiKey.ExpiresAt != nil && apiKey.ExpiresAt.Before(time.Now()) {
 		return nil, fmt.Errorf("API key has expired")
+	}
+
+	// 检查用户是否过期
+	if apiKey.User.ExpiresAt != nil && apiKey.User.ExpiresAt.Before(time.Now()) {
+		return nil, fmt.Errorf("user has expired")
 	}
 
 	// 检查是否激活
@@ -133,4 +138,12 @@ func (s *APIKeyService) ToggleAPIKeyStatus(id int64) error {
 	}
 
 	return nil
+}
+
+// SyncAPIKeysStatusByUserID 根据用户过期状态同步所有 API Key
+func (s *APIKeyService) SyncAPIKeysStatusByUserID(userID int64, isExpired bool) error {
+	// isExpired=true 表示用户过期，禁用所有 API Key
+	// isExpired=false 表示用户未过期，启用所有 API Key
+	isActive := !isExpired
+	return database.DB.Model(&models.APIKey{}).Where("user_id = ?", userID).Update("is_active", isActive).Error
 }
