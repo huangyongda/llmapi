@@ -21,10 +21,19 @@ func (s *APIKeyService) GenerateKeyValue() (string, error) {
 	if _, err := rand.Read(bytes); err != nil {
 		return "", fmt.Errorf("failed to generate random key: %w", err)
 	}
-	return "llm_" + hex.EncodeToString(bytes), nil
+	return "sk-cp-" + hex.EncodeToString(bytes), nil
 }
 
 func (s *APIKeyService) CreateAPIKey(userID int64, keyName string, expiresAt *time.Time) (*models.APIKey, error) {
+	// 检查用户已有的API Key数量
+	var count int64
+	if err := database.DB.Model(&models.APIKey{}).Where("user_id = ?", userID).Count(&count).Error; err != nil {
+		return nil, fmt.Errorf("failed to count API keys: %w", err)
+	}
+	if count >= 5 {
+		return nil, fmt.Errorf("每个用户最多只能创建5个API Key")
+	}
+
 	keyValue, err := s.GenerateKeyValue()
 	if err != nil {
 		return nil, err

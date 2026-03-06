@@ -153,7 +153,16 @@ header h1 {
     text-align: center;
 }
 
-.stat-card h3 {
+.stat-card-full {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.stat-card h3, .stat-card-full h3 {
     font-size: 0.875rem;
     color: var(--secondary-color);
     margin-bottom: 0.5rem;

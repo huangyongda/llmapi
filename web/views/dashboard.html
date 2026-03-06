@@ -21,6 +21,10 @@
         <main>
             <section class="stats-section">
                 <h2>用量统计</h2>
+                <div class="stat-card-full">
+                    <h3>过期时间</h3>
+                    <p class="stat-value" id="expiresAt">-</p>
+                </div>
                 <div class="stats-grid">
                     <div class="stat-card">
                         <h3>可用次数</h3>
@@ -73,7 +77,12 @@
         // Load data
         async function loadData() {
             try {
-                const [usageRes, keysRes] = await Promise.all([
+                const [userRes, usageRes, keysRes] = await Promise.all([
+                    fetch('/web/user/me', {
+                        headers: {
+                            'Authorization': 'Bearer ' + localStorage.getItem('token') || ''
+                        }
+                    }),
                     fetch('/web/user/usage', {
                         headers: {
                             'Authorization': 'Bearer ' + localStorage.getItem('token') || ''
@@ -86,8 +95,12 @@
                     })
                 ]);
 
+                const userData = await userRes.json();
                 const usageData = await usageRes.json();
                 const keysData = await keysRes.json();
+
+                // Update user info
+                document.getElementById('expiresAt').textContent = userData.expires_at || '永久有效';
 
                 // Update stats
                 document.getElementById('availableRequests').textContent = usageData.request_limit - usageData.request_used;

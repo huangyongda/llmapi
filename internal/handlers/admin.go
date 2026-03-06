@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -160,6 +161,10 @@ func (h *AdminHandler) CreateAPIKey(c *gin.Context) {
 
 	apiKey, err := h.apiKeyService.CreateAPIKey(req.UserID, req.KeyName, req.ExpiresAt)
 	if err != nil {
+		if strings.Contains(err.Error(), "每个用户最多只能创建5个") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -325,6 +330,10 @@ func (h *AdminHandler) CreateMyAPIKey(c *gin.Context) {
 
 	apiKey, err := h.apiKeyService.CreateAPIKey(userID.(int64), req.KeyName, nil)
 	if err != nil {
+		if strings.Contains(err.Error(), "每个用户最多只能创建5个") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
