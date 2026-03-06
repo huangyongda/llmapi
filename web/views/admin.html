@@ -158,6 +158,23 @@
 
     <script src="/static/js/app.js"></script>
     <script>
+        // 复制 API Key
+        function copyKey(keyValue) {
+            navigator.clipboard.writeText(keyValue).then(() => {
+                alert('已复制到剪贴板');
+            }).catch(err => {
+                console.error('复制失败:', err);
+                // 降级方案
+                const textarea = document.createElement('textarea');
+                textarea.value = keyValue;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('已复制到剪贴板');
+            });
+        }
+
         // 获取认证头
         function getAuthHeader() {
             const token = localStorage.getItem('token');
@@ -318,7 +335,7 @@
                                     <td>${k.id}</td>
                                     <td>${k.username || k.user_id}</td>
                                     <td>${k.key_name || '-'}</td>
-                                    <td><code>${k.key_value}</code></td>
+                                    <td><code id="key-${k.id}">${k.key_value}</code> <button class="btn btn-sm btn-copy" onclick="copyKey('${k.key_value}')">复制</button></td>
                                     <td><span class="status ${k.is_active ? 'active' : 'inactive'}">${k.is_active ? '激活' : '禁用'}</span></td>
                                     <td>${k.created_at}</td>
                                     <td>
