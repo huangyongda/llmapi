@@ -21,6 +21,7 @@
         <main>
             <div class="tabs">
                 <button class="tab active" data-tab="users">用户管理</button>
+                <button class="tab" data-tab="activation">待激活用户</button>
                 <button class="tab" data-tab="apikeys">API Keys</button>
                 <button class="tab" data-tab="usage">用量统计</button>
             </div>
@@ -33,6 +34,17 @@
                 </div>
                 <div id="usersList" class="data-table">
                     <!-- Users will be loaded here -->
+                </div>
+            </section>
+
+            <!-- 待激活用户 -->
+            <section id="activation-tab" class="tab-content">
+                <div class="section-header">
+                    <h2>待激活用户列表</h2>
+                    <button id="batchCreateActivationBtn" class="btn btn-primary">批量创建</button>
+                </div>
+                <div id="activationUsersList" class="data-table">
+                    <!-- Activation users will be loaded here -->
                 </div>
             </section>
 
@@ -156,6 +168,33 @@
         </div>
     </div>
 
+    <!-- 批量创建待激活用户 Modal -->
+    <div id="batchCreateActivationModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close">&times;</span>
+            <h2>批量创建待激活用户</h2>
+            <form id="batchCreateActivationForm">
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="text" name="password" value="qwedcvb" required placeholder="所有用户的统一密码">
+                </div>
+                <div class="form-group">
+                    <label>有效天数</label>
+                    <input type="number" name="valid_days" required value="30" min="1">
+                </div>
+                <div class="form-group">
+                    <label>请求限制</label>
+                    <input type="number" name="request_limit" required value="300" min="1">
+                </div>
+                <div class="form-group">
+                    <label>账号个数</label>
+                    <input type="number" name="count" required value="10" min="1" max="100">
+                </div>
+                <button type="submit" class="btn btn-primary">批量创建</button>
+            </form>
+        </div>
+    </div>
+
     <script src="/static/js/app.js"></script>
     <script>
         // 复制 API Key
@@ -214,6 +253,9 @@
         let usersPage = 1;
         let usersPageSize = 10;
         let usersTotal = 0;
+        let activationPage = 1;
+        let activationPageSize = 10;
+        let activationTotal = 0;
         let apiKeysPage = 1;
         let apiKeysPageSize = 10;
         let apiKeysTotal = 0;
@@ -227,6 +269,7 @@
                 document.getElementById(tab.dataset.tab + '-tab').classList.add('active');
 
                 if (tab.dataset.tab === 'users') loadUsers();
+                if (tab.dataset.tab === 'activation') loadActivationUsers();
                 if (tab.dataset.tab === 'apikeys') loadAPIKeys();
                 if (tab.dataset.tab === 'usage') {
                     loadUsage();
@@ -250,6 +293,7 @@
                 }
 
                 container.innerHTML = `
+                    <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
@@ -284,6 +328,7 @@
                             `}).join('')}
                         </tbody>
                     </table>
+                    </div>
                     <div class="pagination">
                         <button class="btn btn-sm" onclick="changeUsersPage(${usersPage - 1})" ${usersPage <= 1 ? 'disabled' : ''}>上一页</button>
                         <span>第 ${usersPage} / ${Math.ceil(usersTotal / usersPageSize)} 页</span>
@@ -302,6 +347,82 @@
             loadUsers();
         }
 
+        function changeActivationPage(newPage) {
+            const totalPages = Math.ceil(activationTotal / activationPageSize);
+            if (newPage < 1 || newPage > totalPages) return;
+            activationPage = newPage;
+            loadActivationUsers();
+        }
+
+        // Load Activation Users
+        async function loadActivationUsers() {
+            try {
+                const response = await adminFetch(`/admin/activation-users?page=${activationPage}&page_size=${activationPageSize}`);
+                const data = await response.json();
+
+                activationTotal = data.total || 0;
+
+                const container = document.getElementById('activationUsersList');
+                if (!data.data || data.data.length === 0) {
+                    container.innerHTML = '<p class="empty">暂无待激活用户</p>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>用户名</th>
+                                <th>有效天数</th>
+                                <th>请求限制</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.data.map(u => `
+                                <tr>
+                                    <td>${u.id}</td>
+                                    <td>${u.username}</td>
+                                    <td>${u.valid_days} 天</td>
+                                    <td>${u.request_limit}</td>
+                                    <td>${u.created_at}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteActivationUser(${u.id})">删除</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    </div>
+                    <div class="pagination">
+                        <button class="btn btn-sm" onclick="changeActivationPage(${activationPage - 1})" ${activationPage <= 1 ? 'disabled' : ''}>上一页</button>
+                        <span>第 ${activationPage} / ${Math.ceil(activationTotal / activationPageSize)} 页</span>
+                        <button class="btn btn-sm" onclick="changeActivationPage(${activationPage + 1})" ${activationPage >= Math.ceil(activationTotal / activationPageSize) ? 'disabled' : ''}>下一页</button>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Failed to load activation users:', error);
+            }
+        }
+
+        async function deleteActivationUser(id) {
+            if (!confirm('确定要删除这个待激活用户吗？')) return;
+
+            try {
+                const response = await adminFetch(`/admin/activation-users/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    loadActivationUsers();
+                } else {
+                    alert('删除失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        }
+
         // Load API Keys
         async function loadAPIKeys() {
             try {
@@ -317,6 +438,7 @@
                 }
 
                 container.innerHTML = `
+                    <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
@@ -347,6 +469,7 @@
                             `).join('')}
                         </tbody>
                     </table>
+                    </div>
                     <div class="pagination">
                         <button class="btn btn-sm" onclick="changeAPIKeysPage(${apiKeysPage - 1})" ${apiKeysPage <= 1 ? 'disabled' : ''}>上一页</button>
                         <span>第 ${apiKeysPage} / ${Math.ceil(apiKeysTotal / apiKeysPageSize)} 页</span>
@@ -390,6 +513,7 @@
                 }
 
                 container.innerHTML = `
+                    <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
@@ -418,6 +542,7 @@
                             `).join('')}
                         </tbody>
                     </table>
+                    </div>
                 `;
             } catch (error) {
                 console.error('Failed to load usage:', error);
@@ -444,6 +569,7 @@
                 }
 
                 container.innerHTML = `
+                    <div class="table-wrapper">
                     <table>
                         <thead>
                             <tr>
@@ -477,6 +603,7 @@
                             }).join('')}
                         </tbody>
                     </table>
+                    </div>
                 `;
             } catch (error) {
                 console.error('Failed to load upstream usage:', error);
@@ -553,6 +680,68 @@
                     loadAPIKeys();
                 } else {
                     alert('创建失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        });
+
+        // 批量创建待激活用户
+        document.getElementById('batchCreateActivationBtn').addEventListener('click', () => {
+            document.getElementById('batchCreateActivationModal').style.display = 'block';
+        });
+
+        document.getElementById('batchCreateActivationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            const password = formData.get('password');
+            const validDays = parseInt(formData.get('valid_days'));
+            const requestLimit = parseInt(formData.get('request_limit'));
+            const count = parseInt(formData.get('count'));
+
+            if (count < 1 || count > 100) {
+                alert('账号个数必须在1-100之间');
+                return;
+            }
+
+            // 生成随机用户名（8位英文字母）
+            function generateUsername() {
+                const chars = 'abcdefghijklmnopqrstuvwxyz';
+                let result = '';
+                for (let i = 0; i < 8; i++) {
+                    result += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return result;
+            }
+
+            // 生成用户列表
+            const users = [];
+            for (let i = 0; i < count; i++) {
+                users.push({
+                    username: generateUsername(),
+                    password: password,
+                    valid_days: validDays,
+                    request_limit: requestLimit
+                });
+            }
+
+            try {
+                const response = await adminFetch('/admin/activation-users/batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ users })
+                });
+
+                if (response.ok) {
+                    const createdUsers = await response.json();
+                    alert('成功创建 ' + createdUsers.length + ' 个待激活用户');
+                    document.getElementById('batchCreateActivationModal').style.display = 'none';
+                    e.target.reset();
+                    loadActivationUsers();
+                } else {
+                    const error = await response.json();
+                    alert('创建失败: ' + (error.error || '未知错误'));
                 }
             } catch (error) {
                 alert('网络错误');

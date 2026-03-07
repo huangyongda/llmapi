@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>使用说明 - LLM API</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/js/marked.min.js"></script>
+    <style>
+        .help-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .help-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #3498db;
+        }
+        .help-header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .help-header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+        .help-content {
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .help-content h2 {
+            color: #2c3e50;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+        .help-content h3 {
+            color: #34495e;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        .help-content p {
+            line-height: 1.8;
+            color: #555;
+            margin-bottom: 15px;
+        }
+        .help-content code {
+            background: #f5f5f5;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #e74c3c;
+        }
+        .help-content pre {
+            background: #282c34;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        .help-content pre code {
+            background: none;
+            color: #abb2bf;
+            padding: 0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .help-content ul, .help-content ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        .help-content li {
+            line-height: 1.8;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        .help-content blockquote {
+            border-left: 4px solid #3498db;
+            background: #f8f9fa;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .help-content blockquote p {
+            margin: 0;
+            color: #555;
+        }
+        .help-content img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .help-content .screenshot {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .help-content .screenshot p {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        .help-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .help-content th, .help-content td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .help-content th {
+            background: #3498db;
+            color: white;
+        }
+        .help-content tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #3498db;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="help-container">
+        <div class="help-header">
+            <h1>LLM API 使用说明</h1>
+            <p>快速入门指南 - 轻松调用大语言模型 API</p>
+        </div>
+
+        <div class="help-content" id="helpContent">
+            <!-- Markdown content will be rendered here -->
+        </div>
+
+        <a href="/dashboard.html" class="back-link">← 返回仪表盘</a>
+    </div>
+
+    <script>
+        const markdownContent = `
+## 简介
+
+欢迎使用 LLM API 本平台为您提供稳定、快速的 AI 大语言模型 API 调用服务，支持多种主流模型。
+
+本平台是中转各大 AI 服务器的中介平台。
+
+## 快速开始
+
+### 1. 用我发的账号密码登陆后自动激活 登陆地址 http://120.24.86.32:3000
+
+登陆成功后，系统会自动激活账号，无需手动操作。上面有当前账号的剩余调用次数和过期时间，请留意使用。
+
+### 2. 创建 API Key（默认自动创建了一个key 多个key共用额度的）
+
+登录后，在仪表盘页面点击 **"创建 API Key"** 按钮，填写一个易于识别的名称，即可生成专属的 API Key。
+
+### 3. 开始调用
+
+使用您创建的 API Key 即可调用 API 服务。
+
+
+---
+
+## 常见问题
+
+- **模型用量次数是自己专属的吗？** - 是的，每个账号的调用次数是独立的，不同账号之间不共享调用次数。
+- **API Key 可以创建多个吗？** - 是的，您可以创建多个 API Key 来管理不同的应用或项目，但它们共用同一个账号的调用次数。
+- **调用次数用完了怎么办？** - 每5小时会自动补充调用次数，您也可以联系管理员获取更多调用次数。
+- **是官网直连的apikey吗？** - 不是的，我们平台是中转官网的中间平台，API Key 是我们平台专用的，调用会转发到对应的 AI 服务器。
+- **什么时候刷新额度？** - 额度会在每5小时自动刷新。在0点、5点、10点、15点、20点刷新。
+- **会被限流吗？** - 不会，只要您的账号有剩余调用次数，就可以正常调用 API，不会因为调用频率过高而被限流。
+- **一次调用是什么意思？** - 一次调用指的是您向 API 发送一次请求并获得响应的过程。 每次调用会扣除相应的调用次数，不限制上下文长度。所以不限制token长度。只要调用成功就会扣除调用次数。
+
+---
+
+如有任何问题，请随时联系技术支持。
+
+## 配置的一些参考
+
+## API 调用示例 可以验证下是否能用。大家都能用。别说调用不了，是你配置有问题。
+
+### cURL 例子 用linux或 macOS终端调用 （你的apikey）替换你的实际 API Key
+
+\`\`\`bash
+curl --request POST \
+  --url http://120.24.86.32:3000/v1/text/chatcompletion_v2 \
+  --header 'Authorization: Bearer 你的apikey' \
+  --header 'Content-Type: application/json' \
+  --data '
+  {
+  "model": "MiniMax-M2.5",
+  "messages": [
+    {
+      "role": "system",
+      "name": "MiniMax AI"
+    },
+    {
+      "role": "user",
+      "content": "你好",
+      "name": "用户"
+    }
+  ],
+  "stream": false
+  }
+'
+
+\`\`\`
+
+###  
+ 
+
+## 截图展示
+
+### cc-switch 配置例子
+cc-switch 下载地址 https://github.com/farion1231/cc-switch/releases
+
+<div class="screenshot">
+
+![Dashboard](/static/image/1.png)
+![Dashboard](/static/image/2.png)
+
+<p>cc-switch 配置例子</p>
+
+
+
+</div>
+
+### openclaw 配置例子 别自己配不好说我的接口不行。这个openclaw 就是情况很多。这不是接口问题。需要自己解决
+ 
+<div class="screenshot">
+
+![Dashboard](/static/image/3.png)
+<p>这个我自己window电脑运行的接口是能用的</p>
+
+
+<p>cc-switch 配置例子</p>
+
+</div>
+
+
+## openclaw
+
+#### 下面这个是我自己修改的可以参考下 路径 C:\\Users\\huangyd\\ .openclaw\\agents\\main\\agent\\models.json
+
+
+\`\`\`json
+{
+  "providers": {
+    "minimax-cn": {
+      "baseUrl": "http://120.24.86.32:3000/anthropic",
+      "api": "anthropic-messages",
+      "authHeader": true,
+      "models": [
+        {
+          "id": "MiniMax-M2.5",
+          "name": "MiniMax M2.5",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0.3,
+            "output": 1.2,
+            "cacheRead": 0.03,
+            "cacheWrite": 0.12
+          },
+          "contextWindow": 200000,
+          "maxTokens": 8192,
+          "api": "anthropic-messages"
+        }
+      ],
+      "apiKey": "llm_bfe870b955bd16e6493d50d78e53502edf7702beddb212d4f9ebc1346"
+    }
+  }
+}
+
+
+\`\`\`
+
+
+#### 还有一个路径也有不知道会不会影响 路径 C:\\Users\\huangyd\\ .openclaw\\openclaw.json
+
+
+\`\`\`json
+
+{
+  "wizard": {
+    "lastRunAt": "2026-03-04T13:52:27.902Z",
+    "lastRunVersion": "2026.3.2",
+    "lastRunCommand": "onboard",
+    "lastRunMode": "local"
+  },
+  "auth": {
+    "profiles": {
+      "minimax-cn:default": {
+        "provider": "minimax-cn",
+        "mode": "api_key"
+      }
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "minimax-cn": {
+        "baseUrl": "http://120.24.86.32:3000/anthropic",
+        "api": "anthropic-messages",
+        "authHeader": true,
+        "models": [
+          {
+            "id": "MiniMax-M2.5",
+            "name": "MiniMax M2.5",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0.3,
+              "output": 1.2,
+              "cacheRead": 0.03,
+              "cacheWrite": 0.12
+            },
+            "contextWindow": 200000,
+            "maxTokens": 8192
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "minimax-cn/MiniMax-M2.5"
+      },
+      "models": {
+        "minimax-cn/MiniMax-M2.5": {
+          "alias": "Minimax"
+        }
+      },
+      "workspace": "C:\\Users\\huangyd\\.openclaw\\workspace"
+    }
+  },
+  "tools": {
+    "profile": "messaging"
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "boot-md": {
+          "enabled": true
+        },
+        "bootstrap-extra-files": {
+          "enabled": true
+        },
+        "command-logger": {
+          "enabled": true
+        },
+        "session-memory": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "loopback",
+    "auth": {
+      "mode": "token",
+      "token": "3919bd866e908d44491fdca7cd34aabc7816a9b0db310240"
+    },
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    },
+    "nodes": {
+      "denyCommands": [
+        "camera.snap",
+        "camera.clip",
+        "screen.record",
+        "contacts.add",
+        "calendar.add",
+        "reminders.add",
+        "sms.send"
+      ]
+    }
+  },
+  "meta": {
+    "lastTouchedVersion": "2026.3.2",
+    "lastTouchedAt": "2026-03-04T13:52:27.909Z"
+  }
+}
+
+
+\`\`\`
+
+
+### 创建 API Key
+
+<div class="screenshot">
+
+ 
+
+</div>
+
+## 注意事项
+
+> **安全提示**：请妥善保管您的 API Key，不要在客户端代码中暴露它。建议将 API Key 存储在服务器端环境变量中。
+
+- 每个账号有调用次数限制，请留意您的剩余次数，每次调用都会扣除相应的次数，每次的调用token不限意味着上下文长度不限
+- API Key 过期后需要续费或联系管理员
+- 请遵守 API 使用条款，合理调用
+- 如有问题，请联系管理员获取帮助
+
+## 支持的模型
+
+- **MiniMax-M2.5** - 最强大的对话模型
+- **MiniMax-M2.1**  
+- **MiniMax-M2** 
+
+`;
+
+        // Render markdown content
+        document.getElementById('helpContent').innerHTML = marked.parse(markdownContent);
+    </script>
+</body>
+</html>
