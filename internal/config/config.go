@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/spf13/viper"
 )
@@ -31,10 +32,14 @@ type DatabaseConfig struct {
 type LLMConfig struct {
 	Provider      string            `mapstructure:"provider"`
 	APIURL        string            `mapstructure:"api_url"`
-	APIKey        string            `mapstructure:"api_key"`
+	APIKeys       []string          `mapstructure:"api_keys"`
 	Timeout       int               `mapstructure:"timeout"`
 	ProxyURL      string            `mapstructure:"proxy_url"`
 	ModelMapping  map[string]string `mapstructure:"model_mapping"`
+
+	// 内部状态
+	keyIndex int
+	keyMutex sync.Mutex
 }
 
 type AdminConfig struct {
@@ -72,4 +77,28 @@ func (c *Config) GetMySQLDSN() string {
 		c.Database.Port,
 		c.Database.Name,
 	)
+}
+
+// GetNextAPIKey 轮询获取下一个 API key
+func (c *LLMConfig) GetNextAPIKey() string {
+	if len(c.APIKeys) == 0 {
+		return ""
+	}
+
+	c.keyMutex.Lock()
+	defer c.keyMutex.Unlock()
+
+	key := c.APIKeys[c.keyIndex]
+	c.keyIndex = (c.keyIndex + 1) % len(c.APIKeys)
+	return key
+}
+
+// GetAPIKey 获取当前索引的 API key（不轮询）
+func (c *LLMConfig) GetAPIKey() string {
+	if len(c.APIKeys) == 0 {
+		return ""
+	}
+	c.keyMutex.Lock()
+	defer c.keyMutex.Unlock()
+	return c.APIKeys[c.keyIndex]
 }

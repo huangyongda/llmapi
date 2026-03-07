@@ -202,6 +202,21 @@ header h1 {
     border-bottom: 1px solid var(--border-color);
 }
 
+/* Upstream Usage Sections */
+.upstream-key-section {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.upstream-key-section h3 {
+    margin: 0 0 16px 0;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+}
+
 .data-table th {
     background-color: #f1f5f9;
     font-weight: 600;

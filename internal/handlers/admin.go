@@ -16,9 +16,9 @@ import (
 )
 
 type AdminHandler struct {
-	userService    *services.UserService
-	apiKeyService  *services.APIKeyService
-	usageService   *services.UsageService
+	userService   *services.UserService
+	apiKeyService *services.APIKeyService
+	usageService  *services.UsageService
 }
 
 func NewAdminHandler() *AdminHandler {
@@ -54,10 +54,10 @@ func (h *AdminHandler) GetUsers(c *gin.Context) {
 
 func (h *AdminHandler) CreateUser(c *gin.Context) {
 	var req struct {
-		Username     string        `json:"username" binding:"required"`
-		Password     string        `json:"password" binding:"required"`
-		RequestLimit int           `json:"request_limit"`
-		ExpiresAt    *time.Time    `json:"expires_at"`
+		Username     string     `json:"username" binding:"required"`
+		Password     string     `json:"password" binding:"required"`
+		RequestLimit int        `json:"request_limit"`
+		ExpiresAt    *time.Time `json:"expires_at"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -88,8 +88,8 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	}
 
 	var req struct {
-		RequestLimit int          `json:"request_limit"`
-		ExpiresAt    *time.Time   `json:"expires_at"`
+		RequestLimit int        `json:"request_limit"`
+		ExpiresAt    *time.Time `json:"expires_at"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -237,11 +237,11 @@ func (h *AdminHandler) GetUsage(c *gin.Context) {
 	stats, _, _, _, _ := h.usageService.GetTotalStats()
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":       responses,
-		"total":      total,
-		"page":       page,
-		"page_size":  pageSize,
-		"stats":      stats,
+		"data":      responses,
+		"total":     total,
+		"page":      page,
+		"page_size": pageSize,
+		"stats":     stats,
 	})
 }
 
@@ -285,9 +285,9 @@ func (h *AdminHandler) GetStats(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"total_requests": totalRequests,
-		"total_tokens":  totalTokens,
-		"total_cost":    totalCost,
-		"total_users":   totalUsers,
+		"total_tokens":   totalTokens,
+		"total_cost":     totalCost,
+		"total_users":    totalUsers,
 	})
 }
 
@@ -402,57 +402,68 @@ func (h *AdminHandler) GetMyUsage(c *gin.Context) {
 	user, _ := h.userService.GetUserByID(userID.(int64))
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":          responses,
-		"total":         total,
-		"page":          page,
-		"page_size":     pageSize,
+		"data":           responses,
+		"total":          total,
+		"page":           page,
+		"page_size":      pageSize,
 		"total_requests": stats,
-		"total_tokens":  tokens,
-		"total_cost":    cost,
-		"request_limit": user.RequestLimit,
-		"request_used":  user.RequestCount,
+		"total_tokens":   tokens,
+		"total_cost":     cost,
+		"request_limit":  user.RequestLimit,
+		"request_used":   user.RequestCount,
 	})
 }
 
 func (h *AdminHandler) GetUpstreamUsage(c *gin.Context) {
-	apiKey := config.AppConfig.LLM.APIKey
-	if apiKey == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "LLM API key not configured"})
+	apiKeys := config.AppConfig.LLM.APIKeys
+	if len(apiKeys) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "LLM API keys not configured"})
 		return
 	}
 
 	url := "https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains"
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+	var results []map[string]interface{}
+
+	for i, apiKey := range apiKeys {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			continue
+		}
+
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{Timeout: 30 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			continue
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			continue
+		}
+
+		var upstreamResp map[string]interface{}
+		if err := json.Unmarshal(body, &upstreamResp); err != nil {
+			continue
+		}
+
+		// 添加 key 索引标识
+		upstreamResp["key_index"] = i
+		results = append(results, upstreamResp)
+	}
+
+	if len(results) == 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch upstream usage for all keys"})
 		return
 	}
 
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch upstream usage: " + err.Error()})
-		return
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response"})
-		return
-	}
-
-	// 解析上游返回的 JSON
-	var upstreamResp map[string]interface{}
-	if err := json.Unmarshal(body, &upstreamResp); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse response"})
-		return
-	}
-
-	c.JSON(http.StatusOK, upstreamResp)
+	c.JSON(http.StatusOK, gin.H{
+		"data": results,
+	})
 }
 
 // GetActivationUsers 获取待激活用户列表

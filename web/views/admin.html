@@ -553,58 +553,68 @@
         async function loadUpstreamUsage() {
             try {
                 const response = await adminFetch('/admin/upstream-usage');
-                const data = await response.json();
+                const result = await response.json();
 
                 const container = document.getElementById('upstreamUsage');
 
-                if (data.base_resp && data.base_resp.status_code !== 0) {
-                    container.innerHTML = '<p class="empty">获取上游用量失败: ' + (data.base_resp.status_msg || '未知错误') + '</p>';
-                    return;
-                }
-
-                const modelRemains = data.model_remains || [];
-                if (modelRemains.length === 0) {
+                if (!result.data || result.data.length === 0) {
                     container.innerHTML = '<p class="empty">暂无上游用量数据</p>';
                     return;
                 }
 
-                container.innerHTML = `
-                    <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>模型</th>
-                                <th>剩余时间</th>
-                                <th>当前周期配额</th>
-                                <th>剩余用量</th>
-                                <th>剩余用量百分比</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${modelRemains.map(m => {
-                                const usagePercent = m.current_interval_total_count > 0
-                                    ? (m.current_interval_usage_count / m.current_interval_total_count * 100).toFixed(1)
-                                    : 0;
-                                const remainsHours = (m.remains_time / 3600/1000).toFixed(1);
-                                return `
+                container.innerHTML = result.data.map((keyData, index) => {
+                    const data = keyData;
+                    if (data.base_resp && data.base_resp.status_code !== 0) {
+                        return `<div class="upstream-key-section"><h3>API Key ${index + 1}</h3><p class="empty">获取用量失败: ${data.base_resp.status_msg || '未知错误'}</p></div>`;
+                    }
+
+                    const modelRemains = data.model_remains || [];
+                    if (modelRemains.length === 0) {
+                        return `<div class="upstream-key-section"><h3>API Key ${index + 1}</h3><p class="empty">暂无用量数据</p></div>`;
+                    }
+
+                    return `
+                        <div class="upstream-key-section">
+                            <h3>API Key ${index + 1}</h3>
+                            <div class="table-wrapper">
+                            <table>
+                                <thead>
                                     <tr>
-                                        <td>${m.model_name}</td>
-                                        <td>${remainsHours} 小时</td>
-                                        <td>${m.current_interval_total_count}</td>
-                                        <td>${m.current_interval_usage_count}</td>
-                                        <td>
-                                            <div class="progress-bar">
-                                                <div class="progress-fill" style="width: ${usagePercent}%"></div>
-                                            </div>
-                                            <span>${usagePercent}%</span>
-                                        </td>
+                                        <th>模型</th>
+                                        <th>剩余时间</th>
+                                        <th>当前周期配额</th>
+                                        <th>剩余</th>
+                                        <th>剩余用量百分比</th>
                                     </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                    </div>
-                `;
+                                </thead>
+                                <tbody>
+                                    ${modelRemains.map(m => {
+                                        const usagePercent = m.current_interval_total_count > 0
+                                            ? (m.current_interval_usage_count / m.current_interval_total_count * 100).toFixed(1)
+                                            : 0;
+                                        const remainsHours = (m.remains_time / 3600/1000).toFixed(1);
+                                        const remaining = m.current_interval_total_count - m.current_interval_usage_count;
+                                        return `
+                                            <tr>
+                                                <td>${m.model_name}</td>
+                                                <td>${remainsHours} 小时</td>
+                                                <td>${m.current_interval_total_count}</td>
+                                                <td>${m.current_interval_usage_count}</td>
+                                                <td>
+                                                    <div class="progress-bar">
+                                                        <div class="progress-fill" style="width: ${usagePercent}%"></div>
+                                                    </div>
+                                                    <span>${usagePercent}% (已用 ${remaining})</span>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             } catch (error) {
                 console.error('Failed to load upstream usage:', error);
                 document.getElementById('upstreamUsage').innerHTML = '<p class="empty">获取上游用量失败</p>';

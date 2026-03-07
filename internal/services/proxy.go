@@ -136,7 +136,7 @@ func (s *ProxyService) ForwardChatCompletion(r *http.Request, reqBody []byte, ap
 				targetReq.Header.Add(k, vv)
 			}
 		}
-		targetReq.Header.Set("x-api-key", config.AppConfig.LLM.APIKey)
+		targetReq.Header.Set("x-api-key", config.AppConfig.LLM.GetNextAPIKey())
 
 		//打印header
 		log.Printf("ForwardChatCompletion: targetReq.Header=%v", targetReq.Header)
@@ -158,7 +158,7 @@ func (s *ProxyService) ForwardChatCompletion(r *http.Request, reqBody []byte, ap
 			}
 		}
 		targetReq.Header.Del("Authorization")
-		targetReq.Header.Set("Authorization", "Bearer "+config.AppConfig.LLM.APIKey)
+		targetReq.Header.Set("Authorization", "Bearer "+config.AppConfig.LLM.GetNextAPIKey())
 		//打印header
 		log.Printf("ForwardChatCompletion: targetReq.Header=%v", targetReq.Header)
 	}
@@ -304,7 +304,7 @@ func (s *ProxyService) HandleSSE(w http.ResponseWriter, r *http.Request, apiKey 
 	}
 
 	targetReq.Header.Set("Content-Type", "application/json")
-	targetReq.Header.Set("Authorization", "Bearer "+config.AppConfig.LLM.APIKey)
+	targetReq.Header.Set("Authorization", "Bearer "+config.AppConfig.LLM.GetNextAPIKey())
 
 	// 发送请求
 	startTime := time.Now()

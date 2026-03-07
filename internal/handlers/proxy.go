@@ -110,11 +110,11 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 	// ===== 替换 API Key =====
 	if hasXApiKey {
 		// Anthropic
-		req.Header.Set("x-api-key", config.AppConfig.LLM.APIKey)
+		req.Header.Set("x-api-key", config.AppConfig.LLM.GetNextAPIKey())
 		req.Header.Del("Authorization")
 	} else {
 		// OpenAI
-		req.Header.Set("Authorization", "Bearer "+config.AppConfig.LLM.APIKey)
+		req.Header.Set("Authorization", "Bearer "+config.AppConfig.LLM.GetNextAPIKey())
 		req.Header.Del("x-api-key")
 	}
 	req.Host = target.Hostname()
