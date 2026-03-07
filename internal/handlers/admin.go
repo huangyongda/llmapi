@@ -454,3 +454,106 @@ func (h *AdminHandler) GetUpstreamUsage(c *gin.Context) {
 
 	c.JSON(http.StatusOK, upstreamResp)
 }
+
+// GetActivationUsers 获取待激活用户列表
+func (h *AdminHandler) GetActivationUsers(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+
+	users, total, err := h.userService.GetAllActivationUsers(page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var responses []models.ActivationUserResponse
+	for _, user := range users {
+		responses = append(responses, user.ToResponse())
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":      responses,
+		"total":     total,
+		"page":      page,
+		"page_size": pageSize,
+	})
+}
+
+// CreateActivationUser 创建激活用户
+func (h *AdminHandler) CreateActivationUser(c *gin.Context) {
+	var req struct {
+		Username     string `json:"username" binding:"required"`
+		Password     string `json:"password" binding:"required"`
+		ValidDays    int    `json:"valid_days" binding:"required"`
+		RequestLimit int    `json:"request_limit" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	user, err := h.userService.CreateActivationUser(req.Username, req.Password, req.ValidDays, req.RequestLimit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, user.ToResponse())
+}
+
+// DeleteActivationUser 删除激活用户
+func (h *AdminHandler) DeleteActivationUser(c *gin.Context) {
+	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	if err := h.userService.DeleteActivationUser(userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Activation user deleted successfully"})
+}
+
+// BatchCreateActivationUsers 批量创建激活用户
+func (h *AdminHandler) BatchCreateActivationUsers(c *gin.Context) {
+	var req struct {
+		Users []struct {
+			Username     string `json:"username" binding:"required"`
+			Password     string `json:"password" binding:"required"`
+			ValidDays    int    `json:"valid_days" binding:"required"`
+			RequestLimit int    `json:"request_limit" binding:"required"`
+		} `json:"users" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	var activationUsers []models.ActivationUser
+	for _, u := range req.Users {
+		activationUsers = append(activationUsers, models.ActivationUser{
+			Username:     u.Username,
+			PasswordHash: u.Password, // 会在service中哈希
+			ValidDays:    u.ValidDays,
+			RequestLimit: u.RequestLimit,
+		})
+	}
+
+	users, err := h.userService.BatchCreateActivationUsers(activationUsers)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var responses []models.ActivationUserResponse
+	for _, user := range users {
+		responses = append(responses, user.ToResponse())
+	}
+
+	c.JSON(http.StatusCreated, responses)
+}

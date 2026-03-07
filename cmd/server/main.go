@@ -61,6 +61,9 @@ func main() {
 	r.GET("/dashboard.html", func(c *gin.Context) {
 		c.HTML(200, "dashboard.html", nil)
 	})
+	r.GET("/help.html", func(c *gin.Context) {
+		c.HTML(200, "help.html", nil)
+	})
 	r.GET("/admin.html", func(c *gin.Context) {
 		c.HTML(200, "admin.html", nil)
 	})
@@ -144,6 +147,12 @@ func main() {
 		admin.GET("/users/:user_id/usage", adminHandler.GetUserUsage)
 		admin.GET("/stats", adminHandler.GetStats)
 		admin.GET("/upstream-usage", adminHandler.GetUpstreamUsage)
+
+		// 激活用户管理
+		admin.GET("/activation-users", adminHandler.GetActivationUsers)
+		admin.POST("/activation-users", adminHandler.CreateActivationUser)
+		admin.DELETE("/activation-users/:id", adminHandler.DeleteActivationUser)
+		admin.POST("/activation-users/batch", adminHandler.BatchCreateActivationUsers)
 	}
 
 	// 启动服务器

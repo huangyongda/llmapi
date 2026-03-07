@@ -50,6 +50,7 @@ func Migrate() error {
 		&models.User{},
 		&models.APIKey{},
 		&models.UsageLog{},
+		&models.ActivationUser{},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to migrate database: %w", err)

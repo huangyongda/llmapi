@@ -131,7 +131,28 @@ func (s *UserService) VerifyPassword(username, password string) (*models.User, e
 	fmt.Println("Verifying password for user:", username)
 	user, err := s.GetUserByUsername(username)
 	if err != nil {
-		return nil, errors.New("invalid username or password")
+		// 用户表找不到，尝试在激活表中查找
+		activationUser, err := s.GetActivationUserByUsername(username)
+		if err != nil {
+			return nil, errors.New("invalid username or password")
+		}
+
+		// 验证激活用户密码
+		if err := bcrypt.CompareHashAndPassword([]byte(activationUser.PasswordHash), []byte(password)); err != nil {
+			return nil, errors.New("invalid username or password")
+		}
+
+		// 自动创建用户
+		expiresAt := time.Now().AddDate(0, 0, activationUser.ValidDays)
+		newUser, err := s.CreateUser(username, password, activationUser.RequestLimit, false, &expiresAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create user from activation: %w", err)
+		}
+
+		// 激活成功后删除激活用户记录
+		s.DeleteActivationUser(activationUser.ID)
+
+		return newUser, nil
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
@@ -186,4 +207,75 @@ func (s *UserService) InitAdmin() error {
 
 	fmt.Println("Admin user created successfully")
 	return nil
+}
+
+// GetActivationUserByUsername 根据用户名获取激活用户
+func (s *UserService) GetActivationUserByUsername(username string) (*models.ActivationUser, error) {
+	var activationUser models.ActivationUser
+	if err := database.DB.Where("username = ?", username).First(&activationUser).Error; err != nil {
+		return nil, fmt.Errorf("activation user not found: %w", err)
+	}
+	return &activationUser, nil
+}
+
+// GetAllActivationUsers 获取所有激活用户
+func (s *UserService) GetAllActivationUsers(page, pageSize int) ([]models.ActivationUser, int64, error) {
+	var users []models.ActivationUser
+	var total int64
+
+	query := database.DB.Model(&models.ActivationUser{})
+	query.Count(&total)
+
+	offset := (page - 1) * pageSize
+	if err := query.Offset(offset).Limit(pageSize).Find(&users).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to get activation users: %w", err)
+	}
+
+	return users, total, nil
+}
+
+// CreateActivationUser 创建激活用户
+func (s *UserService) CreateActivationUser(username, password string, validDays, requestLimit int) (*models.ActivationUser, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	activationUser := &models.ActivationUser{
+		Username:     username,
+		PasswordHash: string(hash),
+		ValidDays:    validDays,
+		RequestLimit: requestLimit,
+	}
+
+	if err := database.DB.Create(activationUser).Error; err != nil {
+		return nil, fmt.Errorf("failed to create activation user: %w", err)
+	}
+
+	return activationUser, nil
+}
+
+// DeleteActivationUser 删除激活用户
+func (s *UserService) DeleteActivationUser(id int64) error {
+	return database.DB.Delete(&models.ActivationUser{}, id).Error
+}
+
+// BatchCreateActivationUsers 批量创建激活用户
+func (s *UserService) BatchCreateActivationUsers(users []models.ActivationUser) ([]models.ActivationUser, error) {
+	var activationUsers []models.ActivationUser
+
+	for i := range users {
+		hash, err := bcrypt.GenerateFromPassword([]byte(users[i].PasswordHash), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, fmt.Errorf("failed to hash password for %s: %w", users[i].Username, err)
+		}
+		users[i].PasswordHash = string(hash)
+		activationUsers = append(activationUsers, users[i])
+	}
+
+	if err := database.DB.Create(&activationUsers).Error; err != nil {
+		return nil, fmt.Errorf("failed to batch create activation users: %w", err)
+	}
+
+	return activationUsers, nil
 }

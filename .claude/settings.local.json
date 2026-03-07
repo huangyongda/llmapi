@@ -6,7 +6,9 @@
       "Bash(go build:*)",
       "Bash(curl:*)",
       "Bash(pkill:*)",
-      "Bash(mysql:*)"
+      "Bash(mysql:*)",
+      "Read(//c/Program Files/**)",
+      "Read(//c//**)"
     ]
   }
 }

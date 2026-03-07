@@ -50,3 +50,37 @@ func (u *User) ToResponse() UserResponse {
 		CreatedAt:    u.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 }
+
+// ActivationUser 激活用户表
+type ActivationUser struct {
+	ID           int64     `gorm:"primaryKey" json:"id"`
+	Username     string    `gorm:"size:100;uniqueIndex;not null" json:"username"`
+	PasswordHash string    `gorm:"size:255;not null" json:"-"`
+	ValidDays    int       `gorm:"default:0" json:"valid_days"`     // 有效天数
+	RequestLimit int       `gorm:"default:0" json:"request_limit"`  // 最高调用次数
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+func (ActivationUser) TableName() string {
+	return "activation_users"
+}
+
+// ActivationUserResponse 激活用户响应
+type ActivationUserResponse struct {
+	ID           int64  `json:"id"`
+	Username     string `json:"username"`
+	ValidDays    int    `json:"valid_days"`
+	RequestLimit int    `json:"request_limit"`
+	CreatedAt    string `json:"created_at"`
+}
+
+func (a *ActivationUser) ToResponse() ActivationUserResponse {
+	return ActivationUserResponse{
+		ID:           a.ID,
+		Username:     a.Username,
+		ValidDays:    a.ValidDays,
+		RequestLimit: a.RequestLimit,
+		CreatedAt:    a.CreatedAt.Format("2006-01-02 15:04:05"),
+	}
+}
