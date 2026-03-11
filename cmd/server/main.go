@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -11,7 +16,23 @@ import (
 	"llmapi/internal/handlers"
 	"llmapi/internal/middleware"
 	"llmapi/internal/services"
+	"llmapi/tools"
 )
+
+func InitDynamicWeightedSelector() {
+	// 创建动态权重选择器
+	//循环config.llm.api_keys
+	keys := []tools.WeightedKey{}
+	for i := 0; i < len(config.AppConfig.LLM.APIKeys); i++ {
+		key := tools.WeightedKey{
+			Key:    config.AppConfig.LLM.APIKeys[i],
+			Weight: 1,
+		}
+		keys = append(keys, key)
+	}
+	Selector := tools.NewDynamicWeightedSelector(keys)
+	tools.Selector = Selector
+}
 
 func main() {
 	// 加载配置
@@ -33,11 +54,20 @@ func main() {
 	if err := userService.InitAdmin(); err != nil {
 		log.Printf("Warning: Failed to init admin: %v", err)
 	}
+	InitDynamicWeightedSelector()
+
+	// 创建可取消的 context
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// 启动定时任务协程
+	go runTask(ctx)
 
 	// 初始化处理器
 	authHandler := handlers.NewAuthHandler()
 	proxyHandler := handlers.NewProxyHandler()
 	adminHandler := handlers.NewAdminHandler()
+	go executeTask()
 
 	// 设置路由
 	r := gin.Default()
@@ -164,4 +194,73 @@ func main() {
 
 	<-make(chan struct{})
 	fmt.Println("Server stopped")
+}
+
+// 独立协程：每 60 秒执行一次
+func runTask(ctx context.Context) {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	fmt.Println("🕒 定时任务协程已启动")
+
+	for {
+		select {
+		case <-ticker.C:
+			//executeTask()
+		case <-ctx.Done():
+			fmt.Println("🔚 定时任务协程已停止")
+			return
+		}
+	}
+}
+
+func executeTask() {
+	fmt.Println("🚀 开始执行定时任务")
+	apiKeys := config.AppConfig.LLM.APIKeys
+	if len(apiKeys) == 0 {
+		fmt.Print("LLM API keys not configured")
+		return
+	}
+
+	url := "https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains"
+
+	var results []map[string]interface{}
+
+	for i, apiKey := range apiKeys {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			continue
+		}
+
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{Timeout: 30 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			continue
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			continue
+		}
+		var upstreamResp map[string]interface{}
+		if err := json.Unmarshal(body, &upstreamResp); err != nil {
+			continue
+		}
+		//current_interval_usage_count
+		current_interval_usage_count := 0
+		for _, modelRemain := range upstreamResp["model_remains"].([]interface{}) {
+			current_interval_usage_count = int(modelRemain.(map[string]interface{})["current_interval_usage_count"].(float64))
+		}
+		tools.Selector.SetWeight(apiKey, current_interval_usage_count)
+		fmt.Println(apiKey, current_interval_usage_count)
+
+		// 添加 key 索引标识
+		upstreamResp["key_index"] = i
+		results = append(results, upstreamResp)
+	}
+	fmt.Println(results)
 }

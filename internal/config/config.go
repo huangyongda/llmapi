@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"llmapi/tools"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -30,12 +31,13 @@ type DatabaseConfig struct {
 }
 
 type LLMConfig struct {
-	Provider      string            `mapstructure:"provider"`
-	APIURL        string            `mapstructure:"api_url"`
-	APIKeys       []string          `mapstructure:"api_keys"`
-	Timeout       int               `mapstructure:"timeout"`
-	ProxyURL      string            `mapstructure:"proxy_url"`
-	ModelMapping  map[string]string `mapstructure:"model_mapping"`
+	Provider     string            `mapstructure:"provider"`
+	APIURL       string            `mapstructure:"api_url"`
+	APIKeys      []string          `mapstructure:"api_keys"`
+	APIWeights   []float32         `mapstructure:"api_weights"`
+	Timeout      int               `mapstructure:"timeout"`
+	ProxyURL     string            `mapstructure:"proxy_url"`
+	ModelMapping map[string]string `mapstructure:"model_mapping"`
 
 	// 内部状态
 	keyIndex int
@@ -81,15 +83,17 @@ func (c *Config) GetMySQLDSN() string {
 
 // GetNextAPIKey 轮询获取下一个 API key
 func (c *LLMConfig) GetNextAPIKey() string {
-	if len(c.APIKeys) == 0 {
-		return ""
-	}
+	key := tools.Selector.Select()
 
-	c.keyMutex.Lock()
-	defer c.keyMutex.Unlock()
+	// if len(c.APIKeys) == 0 {
+	// 	return ""
+	// }
 
-	key := c.APIKeys[c.keyIndex]
-	c.keyIndex = (c.keyIndex + 1) % len(c.APIKeys)
+	// c.keyMutex.Lock()
+	// defer c.keyMutex.Unlock()
+
+	// key := c.APIKeys[c.keyIndex]
+	// c.keyIndex = (c.keyIndex + 1) % len(c.APIKeys)
 	return key
 }
 
