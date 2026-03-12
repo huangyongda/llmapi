@@ -330,9 +330,11 @@
                     </table>
                     </div>
                     <div class="pagination">
+                        <button class="btn btn-sm" onclick="changeUsersPage(1)">首页</button>
                         <button class="btn btn-sm" onclick="changeUsersPage(${usersPage - 1})" ${usersPage <= 1 ? 'disabled' : ''}>上一页</button>
                         <span>第 ${usersPage} / ${Math.ceil(usersTotal / usersPageSize)} 页</span>
                         <button class="btn btn-sm" onclick="changeUsersPage(${usersPage + 1})" ${usersPage >= Math.ceil(usersTotal / usersPageSize) ? 'disabled' : ''}>下一页</button>
+                        <button class="btn btn-sm" onclick="changeUsersPage(${Math.ceil(usersTotal / usersPageSize)})">尾页</button>
                     </div>
                 `;
             } catch (error) {
@@ -398,9 +400,11 @@
                     </table>
                     </div>
                     <div class="pagination">
+                        <button class="btn btn-sm" onclick="changeAPIKeysPage(1)" ${activationPage <= 1 ? 'disabled' : ''}>首页</button>
                         <button class="btn btn-sm" onclick="changeActivationPage(${activationPage - 1})" ${activationPage <= 1 ? 'disabled' : ''}>上一页</button>
                         <span>第 ${activationPage} / ${Math.ceil(activationTotal / activationPageSize)} 页</span>
                         <button class="btn btn-sm" onclick="changeActivationPage(${activationPage + 1})" ${activationPage >= Math.ceil(activationTotal / activationPageSize) ? 'disabled' : ''}>下一页</button>
+                        <button class="btn btn-sm" onclick="changeActivationPage(${Math.ceil(activationTotal / activationPageSize)})" ${activationPage >= Math.ceil(activationTotal / activationPageSize) ? 'disabled' : ''}>尾页</button>
                     </div>
                 `;
             } catch (error) {
@@ -471,9 +475,11 @@
                     </table>
                     </div>
                     <div class="pagination">
+                        <button class="btn btn-sm" onclick="changeAPIKeysPage(1)" ${apiKeysPage <= 1 ? 'disabled' : ''}>首页</button>
                         <button class="btn btn-sm" onclick="changeAPIKeysPage(${apiKeysPage - 1})" ${apiKeysPage <= 1 ? 'disabled' : ''}>上一页</button>
                         <span>第 ${apiKeysPage} / ${Math.ceil(apiKeysTotal / apiKeysPageSize)} 页</span>
                         <button class="btn btn-sm" onclick="changeAPIKeysPage(${apiKeysPage + 1})" ${apiKeysPage >= Math.ceil(apiKeysTotal / apiKeysPageSize) ? 'disabled' : ''}>下一页</button>
+                        <button class="btn btn-sm" onclick="changeAPIKeysPage(${Math.ceil(apiKeysTotal / apiKeysPageSize)})" ${apiKeysPage >= Math.ceil(apiKeysTotal / apiKeysPageSize) ? 'disabled' : ''}>末页</button>
                     </div>
                 `;
             } catch (error) {
