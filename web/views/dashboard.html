@@ -36,6 +36,12 @@
                     <div class="stat-card">
                         <h3>可用次数</h3>
                         <p class="stat-value" id="availableRequests">-</p>
+                        <!-- HTML 结构 -->
+                        <div class="progress-container">
+                            <div class="progress-bar" id="myProgressBar">
+                                <span class="progress-text" id="progressText">0%</span>
+                            </div>
+                        </div>
                     </div>
                     <div class="stat-card">
                         <h3>已用次数</h3>
@@ -80,6 +86,37 @@
         }
 
         document.getElementById('username').textContent = user.username;
+
+        /**
+         * 设置进度条的函数
+         * @param {number} percent - 0 到 100 之间的数字
+         */
+        function setProgress(percent) {
+            // 1. 获取 DOM 元素
+            const bar = document.getElementById('myProgressBar');
+            const text = document.getElementById('progressText');
+
+            // 2. 简单的数据校验（防止超出 0-100 范围）
+            if (percent < 0) percent = 0;
+            if (percent > 100) percent = 100;
+
+            // 3. 修改 CSS 宽度
+            bar.style.width = percent + '%';
+
+            // 4. 修改文字内容
+            text.innerText = percent + '%';
+            
+            // 5. (可选) 根据进度改变文字颜色，防止蓝色背景看不清白色文字
+            // 如果进度条很短，文字可能会跑到灰色背景上，这里简单处理
+            if (percent < 10) {
+                text.style.color = '#333'; // 在灰色背景上显示深色字
+                text.style.marginRight = '0';
+            } else {
+                text.style.color = '#fff'; // 在蓝色背景上显示白色字
+            }
+        }
+
+
         /**
          * 获取下一个刷新时间
          * 规则：每天 0, 5, 10, 15, 20 点刷新
@@ -178,6 +215,9 @@
                 document.getElementById('usedRequests').textContent = usageData.request_used;
                 document.getElementById('totalRequests').textContent = usageData.total_requests || 0;
                 // document.getElementById('totalTokens').textContent = usageData.total_tokens || 0;
+                // console.log((usageData.request_limit - usageData.request_used)/usageData.request_limit);
+
+                setProgress((usageData.request_limit - usageData.request_used)/usageData.request_limit*100);
 
                 const nextTime = getNextRefreshTime();
                 document.getElementById('nextTime').textContent = formatDateTime(nextTime);
