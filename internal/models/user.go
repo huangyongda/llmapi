@@ -14,6 +14,7 @@ type User struct {
 	RequestCount  int            `gorm:"default:0" json:"request_count"`
 	IsAdmin       bool           `gorm:"default:false" json:"is_admin"`
 	ExpiresAt     *time.Time     `gorm:"index" json:"expires_at"`
+	Remark        string         `gorm:"size:500" json:"remark"`
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
@@ -31,6 +32,7 @@ type UserResponse struct {
 	RequestCount int     `json:"request_count"`
 	IsAdmin      bool    `json:"is_admin"`
 	ExpiresAt    *string `json:"expires_at"`
+	Remark       string  `json:"remark"`
 	CreatedAt    string  `json:"created_at"`
 }
 
@@ -47,6 +49,7 @@ func (u *User) ToResponse() UserResponse {
 		RequestCount: u.RequestCount,
 		IsAdmin:      u.IsAdmin,
 		ExpiresAt:    expiresAt,
+		Remark:       u.Remark,
 		CreatedAt:    u.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 }
@@ -58,6 +61,7 @@ type ActivationUser struct {
 	PasswordHash string    `gorm:"size:255;not null" json:"-"`
 	ValidDays    int       `gorm:"default:0" json:"valid_days"`     // 有效天数
 	RequestLimit int       `gorm:"default:0" json:"request_limit"`  // 最高调用次数
+	Remarks      string    `gorm:"size:500" json:"remarks"`         // 备注
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
@@ -72,6 +76,7 @@ type ActivationUserResponse struct {
 	Username     string `json:"username"`
 	ValidDays    int    `json:"valid_days"`
 	RequestLimit int    `json:"request_limit"`
+	Remarks      string `json:"remarks"`
 	CreatedAt    string `json:"created_at"`
 }
 
@@ -81,6 +86,7 @@ func (a *ActivationUser) ToResponse() ActivationUserResponse {
 		Username:     a.Username,
 		ValidDays:    a.ValidDays,
 		RequestLimit: a.RequestLimit,
+		Remarks:      a.Remarks,
 		CreatedAt:    a.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 }

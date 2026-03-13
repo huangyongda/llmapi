@@ -31,6 +31,12 @@
                 <div class="section-header">
                     <h2>用户列表</h2>
                     <div class="search-box">
+                        <!-- //排序 id / 用量  -->
+                         排序
+                        <select id="sortSelect">
+                            <option value="id">ID</option>
+                            <option value="usage">用量</option>
+                        </select>
                         <input type="text" id="userSearchInput" placeholder="搜索用户名..." onkeypress="if(event.key==='Enter')searchUsers()">
                         <button class="btn btn-sm" onclick="searchUsers()">搜索</button>
                     </div>
@@ -124,6 +130,10 @@
                     <label>过期时间（留空表示永不过期）</label>
                     <input type="datetime-local" name="expires_at">
                 </div>
+                <div class="form-group">
+                    <label>备注</label>
+                    <input type="text" name="remark" placeholder="可选">
+                </div>
                 <button type="submit" class="btn btn-primary">创建</button>
             </form>
         </div>
@@ -147,6 +157,10 @@
                 <div class="form-group">
                     <label>过期时间（留空表示永不过期）</label>
                     <input type="datetime-local" name="expires_at" id="editExpiresAt">
+                </div>
+                <div class="form-group">
+                    <label>备注</label>
+                    <input type="text" name="remark" id="editRemark" placeholder="可选">
                 </div>
                 <button type="submit" class="btn btn-primary">保存</button>
             </form>
@@ -193,6 +207,10 @@
                 <div class="form-group">
                     <label>账号个数</label>
                     <input type="number" name="count" required value="10" min="1" max="100">
+                </div>
+                <div class="form-group">
+                    <label>备注</label>
+                    <input type="text" name="remarks" placeholder="可选">
                 </div>
                 <button type="submit" class="btn btn-primary">批量创建</button>
             </form>
@@ -290,6 +308,8 @@
                 if (usersSearch) {
                     url += `&username=${encodeURIComponent(usersSearch)}`;
                 }
+                sort = document.getElementById('sortSelect').value;
+                url += '&sort='+sort;
                 const response = await adminFetch(url);
                 const data = await response.json();
 
@@ -312,6 +332,7 @@
                                 <th>已用次数</th>
                                 <th>过期时间</th>
                                 <th>状态</th>
+                                <th>备注</th>
                                 <th>创建时间</th>
                                 <th>操作</th>
                             </tr>
@@ -328,9 +349,10 @@
                                     <td>${u.request_count}</td>
                                     <td>${u.expires_at || '-'}</td>
                                     <td>${status}</td>
+                                    <td>${u.remark || '-'}</td>
                                     <td>${u.created_at}</td>
                                     <td>
-                                        <button class="btn btn-sm" onclick="editUser(${u.id}, ${u.request_limit}, '${u.expires_at || ''}', '${u.username}')">编辑</button>
+                                        <button class="btn btn-sm" onclick="editUser(${u.id}, ${u.request_limit}, '${u.expires_at || ''}', '${u.username}', '${u.remark || ''}')">编辑</button>
                                         <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">删除</button>
                                     </td>
                                 </tr>
@@ -395,6 +417,7 @@
                                 <th>用户名</th>
                                 <th>有效天数</th>
                                 <th>请求限制</th>
+                                <th>备注</th>
                                 <th>创建时间</th>
                                 <th>操作</th>
                             </tr>
@@ -406,6 +429,7 @@
                                     <td>${u.username}</td>
                                     <td>${u.valid_days} 天</td>
                                     <td>${u.request_limit}</td>
+                                    <td>${u.remarks || '-'}</td>
                                     <td>${u.created_at}</td>
                                     <td>
                                         <button class="btn btn-sm btn-danger" onclick="deleteActivationUser(${u.id})">删除</button>
@@ -660,6 +684,7 @@
             const requestBody = {
                 username: formData.get('username'),
                 password: formData.get('password'),
+                remark: formData.get('remark'),
                 request_limit: parseInt(formData.get('request_limit'))
             };
             if (expiresAt) {
@@ -731,6 +756,7 @@
             const validDays = parseInt(formData.get('valid_days'));
             const requestLimit = parseInt(formData.get('request_limit'));
             const count = parseInt(formData.get('count'));
+            const remarks = formData.get('remarks') || '';
 
             if (count < 1 || count > 100) {
                 alert('账号个数必须在1-100之间');
@@ -754,7 +780,8 @@
                     username: generateUsername(),
                     password: password,
                     valid_days: validDays,
-                    request_limit: requestLimit
+                    request_limit: requestLimit,
+                    remarks: remarks
                 });
             }
 
@@ -781,7 +808,7 @@
         });
 
         // User operations
-        async function editUser(id, currentLimit, expiresAt, username) {
+        async function editUser(id, currentLimit, expiresAt, username, remark) {
             document.getElementById('editUserId').value = id;
             document.getElementById('editUsername').value = username;
             document.getElementById('editRequestLimit').value = currentLimit;
@@ -794,6 +821,9 @@
             } else {
                 document.getElementById('editExpiresAt').value = '';
             }
+
+            // 处理备注
+            document.getElementById('editRemark').value = remark || '';
 
             document.getElementById('editUserModal').style.display = 'block';
         }
@@ -811,6 +841,7 @@
             if (expiresAt) {
                 requestBody.expires_at = new Date(expiresAt).toISOString();
             }
+            requestBody.remark = formData.get('remark');
 
             try {
                 const response = await adminFetch(`/admin/users/${userId}`, {

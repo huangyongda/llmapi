@@ -33,8 +33,9 @@ func (h *AdminHandler) GetUsers(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 	username := c.Query("username")
+	sort := c.DefaultQuery("sort", "id")
 
-	users, total, err := h.userService.GetAllUsers(page, pageSize, username)
+	users, total, err := h.userService.GetAllUsers(page, pageSize, username, sort)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -59,6 +60,7 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 		Password     string     `json:"password" binding:"required"`
 		RequestLimit int        `json:"request_limit"`
 		ExpiresAt    *time.Time `json:"expires_at"`
+		Remark       string     `json:"remark"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -72,7 +74,7 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 		req.ExpiresAt = &defaultExpiresAt
 	}
 
-	user, err := h.userService.CreateUser(req.Username, req.Password, req.RequestLimit, false, req.ExpiresAt)
+	user, err := h.userService.CreateUser(req.Username, req.Password, req.RequestLimit, false, req.ExpiresAt, req.Remark)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -91,6 +93,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	var req struct {
 		RequestLimit int        `json:"request_limit"`
 		ExpiresAt    *time.Time `json:"expires_at"`
+		Remark       string     `json:"remark"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -98,7 +101,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	if err := h.userService.UpdateUser(userID, req.RequestLimit, req.ExpiresAt); err != nil {
+	if err := h.userService.UpdateUser(userID, req.RequestLimit, req.ExpiresAt, req.Remark); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -498,6 +501,7 @@ func (h *AdminHandler) CreateActivationUser(c *gin.Context) {
 		Password     string `json:"password" binding:"required"`
 		ValidDays    int    `json:"valid_days" binding:"required"`
 		RequestLimit int    `json:"request_limit" binding:"required"`
+		Remarks      string `json:"remarks"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -505,7 +509,7 @@ func (h *AdminHandler) CreateActivationUser(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userService.CreateActivationUser(req.Username, req.Password, req.ValidDays, req.RequestLimit)
+	user, err := h.userService.CreateActivationUser(req.Username, req.Password, req.ValidDays, req.RequestLimit, req.Remarks)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -538,6 +542,7 @@ func (h *AdminHandler) BatchCreateActivationUsers(c *gin.Context) {
 			Password     string `json:"password" binding:"required"`
 			ValidDays    int    `json:"valid_days" binding:"required"`
 			RequestLimit int    `json:"request_limit" binding:"required"`
+			Remarks      string `json:"remarks"`
 		} `json:"users" binding:"required"`
 	}
 
@@ -553,6 +558,7 @@ func (h *AdminHandler) BatchCreateActivationUsers(c *gin.Context) {
 			PasswordHash: u.Password, // 会在service中哈希
 			ValidDays:    u.ValidDays,
 			RequestLimit: u.RequestLimit,
+			Remarks:      u.Remarks,
 		})
 	}
 
