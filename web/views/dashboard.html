@@ -25,6 +25,9 @@
                 <h2>baseUrl: http://120.24.86.32:3000</h2>
                 <p><b>注意:</b>记得替换 base_url 比如:【https://api.minimaxi.com/后缀】 >>替换 【http://120.24.86.32:3000/后缀】 </p>
             </section>
+            <section class="stats-section" id="feedbackSection" style="display: none;">
+                <h2 style="color: red;">好评 额度+100, 30字好评 额度+200 直接闲鱼找我</h2>
+            </section>
 
             <section class="stats-section">
 
@@ -203,6 +206,7 @@
 
         document.getElementById('username').textContent = user.username;
         document.getElementById('uid').textContent = user.id;
+       
 
         /**
          * 设置进度条的函数
@@ -339,6 +343,11 @@
 
                 const nextTime = getNextRefreshTime();
                 document.getElementById('nextTime').textContent = formatDateTime(nextTime);
+
+                if (userData.request_limit <= 300 && userData.request_count > 0 && userData.remark !== '批量卖出') {
+                    document.getElementById('feedbackSection').style.display = 'block';
+                }
+                
 
                 // Render API Keys
                 renderAPIKeys(keysData);
