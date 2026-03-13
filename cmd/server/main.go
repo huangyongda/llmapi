@@ -67,6 +67,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler()
 	proxyHandler := handlers.NewProxyHandler()
 	adminHandler := handlers.NewAdminHandler()
+
 	go executeTask()
 
 	// 设置路由
@@ -198,7 +199,7 @@ func main() {
 
 // 独立协程：每 60 秒执行一次
 func runTask(ctx context.Context) {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(120 * time.Second)
 	defer ticker.Stop()
 
 	fmt.Println("🕒 定时任务协程已启动")
@@ -206,7 +207,7 @@ func runTask(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			//executeTask()
+			executeTask()
 		case <-ctx.Done():
 			fmt.Println("🔚 定时任务协程已停止")
 			return
@@ -221,6 +222,7 @@ func executeTask() {
 		fmt.Print("LLM API keys not configured")
 		return
 	}
+	apiWeights := config.AppConfig.LLM.APIWeights
 
 	url := "https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains"
 
@@ -255,12 +257,31 @@ func executeTask() {
 		for _, modelRemain := range upstreamResp["model_remains"].([]interface{}) {
 			current_interval_usage_count = int(modelRemain.(map[string]interface{})["current_interval_usage_count"].(float64))
 		}
-		tools.Selector.SetWeight(apiKey, current_interval_usage_count)
-		fmt.Println(apiKey, current_interval_usage_count)
+
+		// apiWeights[i] 如果存在 则用 否则默认为1(float32)
+		weight := float32(1.0)
+		if i >= 0 && i < len(apiWeights) {
+			if apiWeights[i] != 0 {
+				weight = float32(apiWeights[i]) // 显式转换，注意精度丢失
+			}
+		}
+
+		curWeight := int(weight * float32(current_interval_usage_count))
+
+		tools.Selector.SetWeight(apiKey, curWeight)
+		fmt.Println(apiKey, ":set curWeight ", curWeight)
 
 		// 添加 key 索引标识
 		upstreamResp["key_index"] = i
 		results = append(results, upstreamResp)
 	}
-	fmt.Println(results)
+	for _, result := range results {
+		//输出 current_interval_usage_count
+		current_interval_usage_count := 0
+		for _, modelRemain := range result["model_remains"].([]interface{}) {
+			current_interval_usage_count = int(modelRemain.(map[string]interface{})["current_interval_usage_count"].(float64))
+		}
+		fmt.Println("key_index:", result["key_index"], "current_interval_usage_count:", current_interval_usage_count)
+	}
+	// fmt.Println(results)
 }
