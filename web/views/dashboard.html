@@ -14,6 +14,7 @@
                 <div class="nav-links">
                     <a href="/help.html" class="nav-link">使用说明</a>
                     <span id="username"></span>
+                    <span id="uid" style="display: none;"></span>
                     <button id="logoutBtn" class="btn btn-sm">退出</button>
                 </div>
             </nav>
@@ -26,11 +27,39 @@
             </section>
 
             <section class="stats-section">
-                
+
                 <h2>用量统计</h2>
                 <div class="stat-card-full">
                     <h3>过期时间</h3>
                     <p class="stat-value" id="expiresAt">-</p>
+                    <button id="renewBtn" class="btn btn-primary">续费</button>
+                </div>
+                <!-- 续费面板 -->
+                <div id="renewalPanel" class="renewal-panel">
+                    <h3>选择续费套餐</h3>
+                    <div class="renewal-options">
+                        <div class="renewal-card" data-plan="month">
+                            <h4>月卡</h4>
+                            <p class="price">¥19.9</p>
+                            <p class="desc">30天有效期</p>
+                        </div>
+                        <div class="renewal-card" data-plan="quarter">
+                            <h4>季度卡</h4>
+                            <p class="price">¥56.71</p>
+                            <p class="desc">90天有效期（95折扣）</p>
+                        </div>
+                        <div class="renewal-card" data-plan="half">
+                            <h4>半年卡</h4>
+                            <p class="price">¥107.46</p>
+                            <p class="desc">180天有效期（9折）</p>
+                        </div>
+                        <div class="renewal-card" data-plan="year">
+                            <h4>年卡</h4>
+                            <p class="price">¥199.9</p>
+                            <p class="desc">365天有效期（85折）</p>
+                        </div>
+                    </div>
+                    <button id="closeRenewal" class="btn btn-sm">关闭</button>
                 </div>
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -78,6 +107,93 @@
     </div>
 
     <script src="/static/js/app.js"></script>
+    <style>
+        /* 续费面板样式 */
+        .renewal-panel {
+            display: none;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 15px 0;
+            animation: slideDown 0.3s ease;
+        }
+
+        .renewal-panel.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+                max-height: 0;
+                padding: 0 20px;
+                margin: 0;
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+                max-height: 500px;
+                padding: 20px;
+                margin: 15px 0;
+            }
+        }
+
+        .renewal-panel h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+        }
+
+        .renewal-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .renewal-card {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .renewal-card:hover {
+            border-color: #007bff;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+        }
+
+        .renewal-card h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .renewal-card .price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            margin: 0 0 5px 0;
+        }
+
+        .renewal-card .desc {
+            font-size: 12px;
+            color: #666;
+            margin: 0;
+        }
+
+        #closeRenewal {
+            margin-top: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .renewal-options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
     <script>
         // Check if user is logged in
         const user = JSON.parse(localStorage.getItem('user'));
@@ -86,6 +202,7 @@
         }
 
         document.getElementById('username').textContent = user.username;
+        document.getElementById('uid').textContent = user.id;
 
         /**
          * 设置进度条的函数
@@ -394,6 +511,32 @@
         });
 
         loadData();
+
+        // 续费按钮事件
+        document.getElementById('renewBtn').addEventListener('click', () => {
+            if (document.getElementById('renewalPanel').classList.contains('show')) {
+                document.getElementById('renewalPanel').classList.remove('show');
+            } else {
+                document.getElementById('renewalPanel').classList.add('show');
+            }
+        });
+
+        document.getElementById('closeRenewal').addEventListener('click', () => {
+            document.getElementById('renewalPanel').classList.remove('show');
+        });
+
+        // 续费套餐点击事件
+        document.querySelectorAll('.renewal-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const plan = card.dataset.plan;
+                const planNames = { month: '月卡', quarter: '季度卡', half: '半年卡', year: '年卡' };
+                const prices = { month: 19.9, quarter: 80, half: 150, year: 280 };
+                const planType = { month: 1, quarter: 2, half: 3, year: 4 };
+                
+                //跳转到续费页面或者调用续费接口
+                location.href = `http://120.24.86.32:8080/pay.php?uid=${user.id}&type=${planType[plan]}`;
+            });
+        });
     </script>
 </body>
 </html>
