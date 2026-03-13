@@ -156,7 +156,7 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 	apikey, exists := c.Get("api_key")
 	if exists {
 		ak := apikey.(*models.APIKey)
-		h.proxyService.HandleResponseUsage(requestBody, "--", ak, latencyMs)
+		go h.proxyService.HandleResponseUsage(requestBody, "--", ak, latencyMs)
 	}
 }
 
