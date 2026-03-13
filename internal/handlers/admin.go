@@ -32,8 +32,9 @@ func NewAdminHandler() *AdminHandler {
 func (h *AdminHandler) GetUsers(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	username := c.Query("username")
 
-	users, total, err := h.userService.GetAllUsers(page, pageSize)
+	users, total, err := h.userService.GetAllUsers(page, pageSize, username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -62,11 +62,16 @@ func (s *UserService) GetUserByUsername(username string) (*models.User, error) {
 	return &user, nil
 }
 
-func (s *UserService) GetAllUsers(page, pageSize int) ([]models.User, int64, error) {
+func (s *UserService) GetAllUsers(page, pageSize int, username string) ([]models.User, int64, error) {
 	var users []models.User
 	var total int64
 
 	query := database.DB.Model(&models.User{})
+
+	// 如果有用户名搜索条件，添加模糊匹配
+	if username != "" {
+		query = query.Where("username LIKE ?", "%"+username+"%")
+	}
 	query.Count(&total)
 
 	offset := (page - 1) * pageSize

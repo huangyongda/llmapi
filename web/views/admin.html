@@ -30,6 +30,10 @@
             <section id="users-tab" class="tab-content active">
                 <div class="section-header">
                     <h2>用户列表</h2>
+                    <div class="search-box">
+                        <input type="text" id="userSearchInput" placeholder="搜索用户名..." onkeypress="if(event.key==='Enter')searchUsers()">
+                        <button class="btn btn-sm" onclick="searchUsers()">搜索</button>
+                    </div>
                     <button id="createUserBtn" class="btn btn-primary">创建用户</button>
                 </div>
                 <div id="usersList" class="data-table">
@@ -253,6 +257,7 @@
         let usersPage = 1;
         let usersPageSize = 10;
         let usersTotal = 0;
+        let usersSearch = '';
         let activationPage = 1;
         let activationPageSize = 10;
         let activationTotal = 0;
@@ -281,7 +286,11 @@
         // Load Users
         async function loadUsers() {
             try {
-                const response = await adminFetch(`/admin/users?page=${usersPage}&page_size=${usersPageSize}`);
+                let url = `/admin/users?page=${usersPage}&page_size=${usersPageSize}`;
+                if (usersSearch) {
+                    url += `&username=${encodeURIComponent(usersSearch)}`;
+                }
+                const response = await adminFetch(url);
                 const data = await response.json();
 
                 usersTotal = data.total || 0;
@@ -346,6 +355,13 @@
             const totalPages = Math.ceil(usersTotal / usersPageSize);
             if (newPage < 1 || newPage > totalPages) return;
             usersPage = newPage;
+            loadUsers();
+        }
+
+        function searchUsers() {
+            const searchInput = document.getElementById('userSearchInput');
+            usersSearch = searchInput.value.trim();
+            usersPage = 1;
             loadUsers();
         }
 
