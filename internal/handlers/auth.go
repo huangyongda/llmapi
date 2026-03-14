@@ -241,7 +241,7 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 		fmt.Println("apiKeyValue:", apiKeyValue)
 		apiKey, err := apiKeyService.GetAPIKeyByValue(apiKeyValue)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid API key"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid API key:" + apiKeyValue})
 			c.Abort()
 			return
 		}
