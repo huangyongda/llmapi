@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -22,7 +23,10 @@ type Session struct {
 	ExpiresAt time.Time
 }
 
-var sessions = make(map[string]*Session)
+var (
+	sessions    = make(map[string]*Session)
+	sessionsMu  sync.RWMutex
+)
 
 type AuthHandler struct {
 	userService *services.UserService
@@ -68,6 +72,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	// 存储会话
+	sessionsMu.Lock()
 	sessions[token] = &Session{
 		UserID:    user.ID,
 		Username:  user.Username,
@@ -75,6 +80,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		Token:     token,
 		ExpiresAt: time.Now().Add(24 * time.Hour),
 	}
+	sessionsMu.Unlock()
 
 	// 设置session
 	c.Set("user_id", user.ID)
@@ -94,7 +100,9 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	if authHeader != "" {
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) == 2 && parts[0] == "Bearer" {
+			sessionsMu.Lock()
 			delete(sessions, parts[1])
+			sessionsMu.Unlock()
 		}
 	}
 
@@ -135,7 +143,9 @@ func (h *AuthHandler) SessionAuth() gin.HandlerFunc {
 		}
 
 		token := parts[1]
+		sessionsMu.RLock()
 		session, exists := sessions[token]
+		sessionsMu.RUnlock()
 		if !exists {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			c.Abort()
@@ -143,7 +153,9 @@ func (h *AuthHandler) SessionAuth() gin.HandlerFunc {
 		}
 
 		if session.ExpiresAt.Before(time.Now()) {
+			sessionsMu.Lock()
 			delete(sessions, token)
+			sessionsMu.Unlock()
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token expired"})
 			c.Abort()
 			return
@@ -176,7 +188,9 @@ func (h *AuthHandler) GetSession(c *gin.Context) (*Session, bool) {
 	}
 
 	token := parts[1]
+	sessionsMu.RLock()
 	session, exists := sessions[token]
+	sessionsMu.RUnlock()
 	if !exists {
 		return nil, false
 	}
