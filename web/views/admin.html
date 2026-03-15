@@ -813,11 +813,9 @@
             document.getElementById('editUsername').value = username;
             document.getElementById('editRequestLimit').value = currentLimit;
 
-            // 处理过期时间
+            // 处理过期时间 - 直接转换格式，保持本地时间不变
             if (expiresAt) {
-                // 将 "YYYY-MM-DD HH:MM:SS" 转换为 "YYYY-MM-DDTHH:MM" 格式
-                const date = new Date(expiresAt.replace(' ', 'T'));
-                document.getElementById('editExpiresAt').value = date.toISOString().slice(0, 16);
+                document.getElementById('editExpiresAt').value = expiresAt.replace(' ', 'T').slice(0, 16);
             } else {
                 document.getElementById('editExpiresAt').value = '';
             }
