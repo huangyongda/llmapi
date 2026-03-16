@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -46,7 +47,7 @@ func (h *ProxyHandler) HandleChatCompletions(c *gin.Context) {
 	h.proxyService.ProxyRequest(c.Writer, c.Request, ak)
 }
 
-func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
+func (h *ProxyHandler) ProxyHandlerOld(c *gin.Context) {
 
 	var targetHost string
 
@@ -148,6 +149,160 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 	_, err = io.Copy(c.Writer, resp.Body)
 	if err != nil {
 		log.Println("Stream error:", err)
+	}
+
+	latencyMs := int(time.Since(startTime).Milliseconds())
+
+	// 处理用量统计
+	apikey, exists := c.Get("api_key")
+	if exists {
+		ak := apikey.(*models.APIKey)
+		go h.proxyService.HandleResponseUsage(requestBody, "--", ak, latencyMs)
+	}
+}
+
+func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
+	startTime := time.Now()
+
+	var targetHost string
+
+	// ===== 判断类型 =====
+	hasXApiKey := c.Request.Header.Get("x-api-key") != ""
+	authHeader := c.Request.Header.Get("Authorization")
+
+	if hasXApiKey {
+		targetHost = config.AppConfig.LLM.APIURL
+	} else if strings.HasPrefix(authHeader, "Bearer ") {
+		targetHost = config.AppConfig.LLM.APIURL
+	} else {
+		c.String(http.StatusBadRequest, "Missing API key header")
+		return
+	}
+
+	target, err := url.Parse(targetHost)
+	if err != nil {
+		return
+	}
+
+	// 去掉默认端口
+	if target.Port() == "443" || target.Port() == "80" {
+		target.Host = target.Hostname()
+	}
+
+	// 拼接目标 URL
+	targetURL, err := url.Parse(targetHost)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	targetURL.Path = c.Request.URL.Path
+	targetURL.RawQuery = c.Request.URL.RawQuery
+
+	fmt.Println("Target URL:", targetURL.String())
+
+	// ===== 先读取请求体 =====
+	requestBody, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Failed to read request body")
+		return
+	}
+	defer c.Request.Body.Close()
+
+	// c.Set("ops_stream", true)
+
+	// 创建请求（使用读取后的 body）
+	req, err := http.NewRequest(
+		c.Request.Method,
+		targetURL.String(),
+		bytes.NewReader(requestBody),
+	)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// 复制 header
+	req.Header = c.Request.Header.Clone()
+
+	// ===== 替换 API Key =====
+	if hasXApiKey {
+		// Anthropic
+		req.Header.Set("x-api-key", config.AppConfig.LLM.GetNextAPIKey())
+		req.Header.Del("Authorization")
+	} else {
+		// OpenAI
+		req.Header.Set("Authorization", "Bearer "+config.AppConfig.LLM.GetNextAPIKey())
+		req.Header.Del("x-api-key")
+	}
+	req.Host = target.Hostname()
+
+	// ===== 6. 创建 HTTP Client（支持流式）=====
+	client := &http.Client{
+		Timeout: 300 * time.Second, // 长连接超时
+		Transport: &http.Transport{
+			MaxIdleConns:        100,
+			MaxIdleConnsPerHost: 100,
+			DisableCompression:  true, // 🔥 禁用自动解压，保持原始流
+		},
+	}
+
+	// ===== 7. 发送请求 =====
+	resp, err := client.Do(req)
+	if err != nil {
+		c.String(http.StatusBadGateway, "Upstream error: "+err.Error())
+		return
+	}
+	defer resp.Body.Close()
+
+	// ===== 8. 复制响应头（流式关键）=====
+	// 先复制上游所有头部
+	for k, vv := range resp.Header {
+		for _, v := range vv {
+			c.Writer.Header().Add(k, v)
+		}
+	}
+
+	// 🔥 强制设置流式相关头部（防止被缓冲）
+	c.Writer.Header().Set("Cache-Control", "no-cache")
+	c.Writer.Header().Set("Connection", "keep-alive")
+	c.Writer.Header().Set("X-Accel-Buffering", "no") // Nginx 必需
+
+	// 如果是 SSE 格式，确保 Content-Type 正确
+	if strings.Contains(resp.Header.Get("Content-Type"), "text/event-stream") {
+		c.Writer.Header().Set("Content-Type", "text/event-stream")
+	}
+
+	// 设置状态码
+	c.Status(resp.StatusCode)
+
+	// ===== 9. 流式透传（核心优化）=====
+	flusher, ok := c.Writer.(http.Flusher)
+	if !ok {
+		c.String(http.StatusInternalServerError, "Streaming not supported")
+		return
+	}
+
+	// 🔥 使用小缓冲区 + 逐行读取 + 实时刷新
+	buf := make([]byte, 0, 64*1024)
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Buffer(buf, 256*1024) // 最大行长度 256KB
+
+	for scanner.Scan() {
+		line := scanner.Bytes()
+
+		// 写入数据 + 换行（SSE 要求每条消息以 \n 结尾）
+		c.Writer.Write(line)
+		c.Writer.Write([]byte("\n"))
+
+		// 🔥 关键：立即刷新，实现低延迟流式
+		flusher.Flush()
+	}
+
+	if err := scanner.Err(); err != nil {
+		if err != io.EOF {
+			log.Printf("Stream error: %v", err)
+		}
 	}
 
 	latencyMs := int(time.Since(startTime).Milliseconds())
