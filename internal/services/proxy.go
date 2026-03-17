@@ -167,14 +167,14 @@ func (s *ProxyService) ForwardChatCompletion(r *http.Request, reqBody []byte, ap
 	log.Printf("ForwardChatCompletion: sending request to %s", targetURL)
 	log.Printf("ForwardChatCompletion: httpClient=%p, targetReq=%p", s.httpClient, targetReq)
 
-	startTime := time.Now()
+	// startTime := time.Now()
 	resp, err := httpClient.Do(targetReq)
 	if err != nil {
 		log.Printf("ForwardChatCompletion: Do error: %v", err)
 		return nil, fmt.Errorf("failed to forward request: %w", err)
 	}
 	log.Printf("ForwardChatCompletion: response received, status=%d", resp.StatusCode)
-	latencyMs := int(time.Since(startTime).Milliseconds())
+	// latencyMs := int(time.Since(startTime).Milliseconds())
 
 	defer resp.Body.Close()
 	respBody, err := io.ReadAll(resp.Body)
@@ -188,37 +188,16 @@ func (s *ProxyService) ForwardChatCompletion(r *http.Request, reqBody []byte, ap
 	}
 
 	// 解析响应获取用量信息
-	s.HandleResponseUsage(respBody, chatReq.Model, apiKey, latencyMs)
+	// s.HandleResponseUsage(respBody, chatReq.Model, apiKey, latencyMs, 0)
 
 	return respBody, nil
 }
 
-func (s *ProxyService) HandleResponseUsage(respBody []byte, model string, apiKey *models.APIKey, latencyMs int) {
-	var resp map[string]interface{}
-	if err := json.Unmarshal(respBody, &resp); err != nil {
-		return
-	}
-
-	usage := map[string]int{
-		"prompt_tokens":     0,
-		"completion_tokens": 0,
-		"total_tokens":      0,
-	}
-
-	if usageData, ok := resp["usage"].(map[string]interface{}); ok {
-		if v, ok := usageData["prompt_tokens"].(float64); ok {
-			usage["prompt_tokens"] = int(v)
-		}
-		if v, ok := usageData["completion_tokens"].(float64); ok {
-			usage["completion_tokens"] = int(v)
-		}
-		if v, ok := usageData["total_tokens"].(float64); ok {
-			usage["total_tokens"] = int(v)
-		}
-	}
+func (s *ProxyService) HandleResponseUsage(respBody []byte, model string, apiKey *models.APIKey, latencyMs int, total_token, completion_tokens, prompt_tokens int) {
 
 	// 计算费用 (简单估算)
-	cost := float64(usage["total_tokens"]) * 0.00001
+	//(实际使用 Token 数 ÷ 1,000,000) × 8.4
+	cost := float64(total_token) / 1000000 * 8.4
 
 	// 记录用量
 	usageService := NewUsageService()
@@ -226,9 +205,9 @@ func (s *ProxyService) HandleResponseUsage(respBody []byte, model string, apiKey
 		apiKey.ID,
 		apiKey.UserID,
 		model,
-		usage["prompt_tokens"],
-		usage["completion_tokens"],
-		usage["total_tokens"],
+		prompt_tokens,
+		completion_tokens,
+		total_token,
 		cost,
 		latencyMs,
 	)

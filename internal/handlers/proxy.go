@@ -3,6 +3,7 @@ package handlers
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -17,6 +18,27 @@ import (
 	"llmapi/internal/models"
 	"llmapi/internal/services"
 )
+
+// 定义你需要的字段（按需精简）
+type Chunk struct {
+	original string
+	Choices  []struct {
+		FinishReason string `json:"finish_reason"`
+		Message      struct {
+			Content string `json:"content"`
+			Role    string `json:"role"`
+		} `json:"message"`
+		Delta struct {
+			Content string `json:"content"`
+		} `json:"delta"`
+	} `json:"choices"`
+	Model string `json:"model"`
+	Usage struct {
+		TotalTokens      int `json:"total_tokens"`
+		PromptTokens     int `json:"prompt_tokens"`
+		CompletionTokens int `json:"completion_tokens"`
+	} `json:"usage"`
+}
 
 type ProxyHandler struct {
 	proxyService *services.ProxyService
@@ -47,7 +69,71 @@ func (h *ProxyHandler) HandleChatCompletions(c *gin.Context) {
 	h.proxyService.ProxyRequest(c.Writer, c.Request, ak)
 }
 
-func (h *ProxyHandler) ProxyHandlerOld(c *gin.Context) {
+// 流式透传 + 捕获最后一个 data: 行
+func streamWithLastLine(c *gin.Context, resp *http.Response) (result Chunk) {
+	// 复制响应头
+	for k, vv := range resp.Header {
+		for _, v := range vv {
+			c.Writer.Header().Add(k, v)
+		}
+	}
+	c.Status(resp.StatusCode)
+
+	scanner := bufio.NewScanner(resp.Body)
+	var lastDataLine string // 缓存最后一个 data: 行
+
+	for scanner.Scan() {
+		line := scanner.Bytes()
+
+		// 透传给客户端（保持原始格式）
+		c.Writer.Write(append(line, '\n'))
+		c.Writer.Flush()
+
+		// 捕获 data: 开头的行
+		if bytes.HasPrefix(line, []byte("data: ")) {
+			content := string(bytes.TrimPrefix(line, []byte("data: ")))
+			// 跳过 [DONE] 标记
+			if strings.TrimSpace(content) != "" && content != "[DONE]" {
+				lastDataLine = content // 持续覆盖，最后就是最后一行
+			}
+		}
+		if bytes.HasPrefix(line, []byte("{")) {
+			// 其他行，打印原始内容
+			lastDataLine = string(line)
+		}
+
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Println("Scan error:", err)
+	}
+
+	// ✅ 请求结束后打印最后一行（纯 JSON，不含 data: 前缀）
+	// if lastDataLine != "" {
+	// 	log.Println("=== Final Response ===")
+	// 	log.Println(lastDataLine)
+	// 	// 如需解析：json.Unmarshal([]byte(lastDataLine), &result)
+	// }
+
+	result.original = lastDataLine
+
+	// 在 streamWithLastLine 末尾添加：
+	if lastDataLine != "" {
+		if err := json.Unmarshal([]byte(lastDataLine), &result); err == nil {
+			// 提取完整回复内容
+			if len(result.Choices) > 0 && result.Choices[0].Message.Content != "" {
+				log.Printf("✅ Final content: %s", result.Choices[0].Message.Content)
+				log.Printf("📊 Tokens: %d, Model: %s", result.Usage.TotalTokens, result.Model)
+			}
+		} else {
+			log.Println("⚠️ Parse last line failed:", err)
+			log.Println("Raw:", lastDataLine)
+		}
+	}
+	return result
+}
+
+func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 
 	var targetHost string
 
@@ -136,6 +222,8 @@ func (h *ProxyHandler) ProxyHandlerOld(c *gin.Context) {
 	}
 	defer resp.Body.Close()
 
+	info := streamWithLastLine(c, resp)
+
 	// 复制响应头
 	for k, vv := range resp.Header {
 		for _, v := range vv {
@@ -151,17 +239,23 @@ func (h *ProxyHandler) ProxyHandlerOld(c *gin.Context) {
 		log.Println("Stream error:", err)
 	}
 
+	if resp.Status != "200 OK" {
+		fmt.Println("Target URL:", targetURL.String(), resp.Status, "response: ", info.original)
+	} else {
+		fmt.Println("Target URL:", targetURL.String(), resp.Status)
+	}
+
 	latencyMs := int(time.Since(startTime).Milliseconds())
 
 	// 处理用量统计
 	apikey, exists := c.Get("api_key")
 	if exists {
 		ak := apikey.(*models.APIKey)
-		go h.proxyService.HandleResponseUsage(requestBody, "--", ak, latencyMs)
+		go h.proxyService.HandleResponseUsage(requestBody, info.Model, ak, latencyMs, info.Usage.TotalTokens, info.Usage.CompletionTokens, info.Usage.PromptTokens)
 	}
 }
 
-func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
+func (h *ProxyHandler) ProxyHandlerNew(c *gin.Context) {
 	startTime := time.Now()
 
 	var targetHost string
@@ -198,8 +292,6 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 
 	targetURL.Path = c.Request.URL.Path
 	targetURL.RawQuery = c.Request.URL.RawQuery
-
-	fmt.Println("Target URL:", targetURL.String())
 
 	// ===== 先读取请求体 =====
 	requestBody, err := io.ReadAll(c.Request.Body)
@@ -255,6 +347,8 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 	}
 	defer resp.Body.Close()
 
+	info := streamWithLastLine(c, resp)
+
 	// ===== 8. 复制响应头（流式关键）=====
 	// 先复制上游所有头部
 	for k, vv := range resp.Header {
@@ -271,6 +365,11 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 	// 如果是 SSE 格式，确保 Content-Type 正确
 	if strings.Contains(resp.Header.Get("Content-Type"), "text/event-stream") {
 		c.Writer.Header().Set("Content-Type", "text/event-stream")
+	}
+	if resp.Status != "200 OK" {
+		fmt.Println("Target URL:", targetURL.String(), resp.Status, "response: ", info.original)
+	} else {
+		fmt.Println("Target URL:", targetURL.String(), resp.Status)
 	}
 
 	// 设置状态码
@@ -311,7 +410,7 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 	apikey, exists := c.Get("api_key")
 	if exists {
 		ak := apikey.(*models.APIKey)
-		go h.proxyService.HandleResponseUsage(requestBody, "--", ak, latencyMs)
+		go h.proxyService.HandleResponseUsage(requestBody, info.Model, ak, latencyMs, info.Usage.TotalTokens, info.Usage.CompletionTokens, info.Usage.PromptTokens)
 	}
 }
 
