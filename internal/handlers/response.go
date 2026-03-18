@@ -3,12 +3,15 @@ package handlers
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"llmapi/internal/services"
 	"strings"
 	"time"
 
+	"github.com/andybalholm/brotli"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,6 +31,7 @@ type JsonResponse struct {
 	Id      string `json:"id"`
 	Object  string `json:"object"`
 	Created int    `json:"created"`
+	Type    string `json:"type"`
 	Model   string `json:"model"`
 	Choices []struct {
 		Message struct {
@@ -38,10 +42,14 @@ type JsonResponse struct {
 		Index        int    `json:"index"`
 	}
 	Usage struct {
-		TotalTokens      int `json:"total_tokens"`
-		TotalCharacters  int `json:"total_characters"`
-		PromptTokens     int `json:"prompt_tokens"`
-		CompletionTokens int `json:"completion_tokens"`
+		TotalTokens              int `json:"total_tokens"`
+		TotalCharacters          int `json:"total_characters"`
+		PromptTokens             int `json:"prompt_tokens"`
+		CompletionTokens         int `json:"completion_tokens"`
+		InputTokens              int `json:"input_tokens"`
+		OutputTokens             int `json:"output_tokens"`
+		CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
+		CacheReadInputTokens     int `json:"cache_read_input_tokens"`
 	}
 	BaseResp struct {
 		StatusCode int    `json:"status_code"`
@@ -68,39 +76,81 @@ func ResponseLogger() gin.HandlerFunc {
 
 		// 这里拿到返回内容
 		responseBody := blw.body.String()
+		bodyBytes := blw.body.Bytes()
+
+		encoding := c.Writer.Header().Get("Content-Encoding")
+
+		fmt.Println("Encoding:", encoding)
+		if encoding == "gzip" {
+			reader, err := gzip.NewReader(bytes.NewReader(bodyBytes))
+			if err != nil {
+				fmt.Println("gzip reader error:", err)
+				return
+			}
+			defer reader.Close()
+			var resultStr []byte
+			resultStr, _ = io.ReadAll(reader)
+			responseBody = string(resultStr)
+		}
+		if encoding == "br" {
+			reader := brotli.NewReader(bytes.NewReader(bodyBytes))
+			resultStr, err := io.ReadAll(reader)
+			if err != nil {
+				fmt.Println("brotli error:", err)
+				return
+			}
+			responseBody = string(resultStr)
+		}
 
 		// 你可以写日志 / 存数据库 / 打印
 		//获取最后一行数据
 		var lastDataLine string
-		scanner := bufio.NewScanner(strings.NewReader(responseBody))
-		for scanner.Scan() {
-			line := scanner.Text()
-			if strings.HasPrefix(line, "data: ") {
-				lastDataLine = line // 持续覆盖，最后就是最后一行
+
+		if strings.Contains(responseBody, `"type":"message_delta"`) {
+			lines := strings.Split(responseBody, "\n")
+
+			for _, line := range lines {
+				if strings.Contains(line, `"type":"message_delta"`) {
+					fmt.Println(line)
+					lastDataLine = line
+				}
 			}
+		} else {
+			scanner := bufio.NewScanner(strings.NewReader(responseBody))
+			for scanner.Scan() {
+				line := scanner.Text()
+				if strings.HasPrefix(line, "data: ") {
+					lastDataLine = line // 持续覆盖，最后就是最后一行
+				}
+
+			}
+			fmt.Println("=== Response ===")
+			fmt.Println(lastDataLine)
+
 		}
-		fmt.Println("=== Response ===")
-		fmt.Println(lastDataLine)
+
 		//如果捕获到数据，且是data: 开头，则去掉data: 前缀
 		if lastDataLine != "" && strings.HasPrefix(lastDataLine, "data: ") {
 			lastDataLine = strings.TrimPrefix(lastDataLine, "data: ")
 		} else {
 			lastDataLine = responseBody
 		}
+
 		fmt.Println("=== Response ===")
+		fmt.Println("lastDataLine", lastDataLine)
 		//把lastDataLine 转换成json
 		var result JsonResponse
 		err := json.Unmarshal([]byte(lastDataLine), &result)
 		if err != nil {
 			fmt.Println("Error:", err)
 		}
-		if result.BaseResp.StatusCode != 0 {
+		if result.BaseResp.StatusCode != 0 && result.Type == "" {
 			fmt.Println("minimax返回错误:", result.BaseResp.StatusMsg, ",userid:", userId, "完整返回:", result)
 		}
-		// fmt.Println("json result:", result.Usage.TotalTokens)
+		fmt.Println("json result:", result.Usage)
 		go SaveResponseUsage(userId, apiKeyId, result, result.Model, latencyMs)
 
-		// fmt.Println("Response:", responseBody)
+		fmt.Println("Response:", responseBody)
 	}
 }
 
@@ -115,9 +165,9 @@ func SaveResponseUsage(userid, apiKeyId int64, result JsonResponse, model string
 		apiKeyId,
 		userid,
 		model,
-		result.Usage.PromptTokens,
-		result.Usage.CompletionTokens,
-		result.Usage.TotalTokens,
+		result.Usage.PromptTokens+result.Usage.InputTokens,
+		result.Usage.CompletionTokens+result.Usage.OutputTokens,
+		result.Usage.TotalTokens+result.Usage.InputTokens+result.Usage.OutputTokens,
 		cost,
 		latencyMs,
 	)
