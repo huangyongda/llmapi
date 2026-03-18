@@ -35,7 +35,7 @@
                 <div class="stat-card-full">
                     <h3>过期时间</h3>
                     <p class="stat-value" id="expiresAt">-</p>
-                    <button id="renewBtn" class="btn btn-primary">续费</button>
+                    <button id="renewBtn" class="btn btn-primary xufei">续费</button>
                 </div>
                 <!-- 续费面板 -->
                 <div id="renewalPanel" class="renewal-panel">
@@ -346,6 +346,9 @@
 
                 if (userData.request_limit <= 300 && userData.request_count > 0 && userData.remark !== '批量卖出') {
                     document.getElementById('feedbackSection').style.display = 'block';
+                    //xufei
+                    document.getElementById('xufei').style.display = 'none';
+
                 }
                 
 
