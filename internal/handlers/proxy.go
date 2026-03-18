@@ -128,7 +128,7 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 			MaxIdleConnsPerHost: 100,
 		},
 	}
-	startTime := time.Now()
+	// startTime := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
 		c.String(http.StatusBadGateway, err.Error())
@@ -151,14 +151,14 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 		log.Println("Stream error:", err)
 	}
 
-	latencyMs := int(time.Since(startTime).Milliseconds())
+	// latencyMs := int(time.Since(startTime).Milliseconds())
 
 	// 处理用量统计
-	apikey, exists := c.Get("api_key")
-	if exists {
-		ak := apikey.(*models.APIKey)
-		go h.proxyService.HandleResponseUsage(requestBody, "--", ak, latencyMs)
-	}
+	// apikey, exists := c.Get("api_key")
+	// if exists {
+	// 	ak := apikey.(*models.APIKey)
+	// 	go h.proxyService.HandleResponseUsage(requestBody, "--", ak, latencyMs)
+	// }
 }
 
 func (h *ProxyHandler) ProxyHandlerNew(c *gin.Context) {

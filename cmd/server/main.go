@@ -108,7 +108,7 @@ func main() {
 	//anthropic
 	anthropic := r.Group("/anthropic")
 	{
-		anthropic.Use(authHandler.APIKeyAuth())
+		anthropic.Use(authHandler.APIKeyAuth(), handlers.ResponseLogger())
 		anthropic.Any("*path", proxyHandler.ProxyHandler)
 	}
 
@@ -116,7 +116,7 @@ func main() {
 	api := r.Group("/v1")
 	{
 		// 需要API Key认证的路由
-		api.Use(authHandler.APIKeyAuth())
+		api.Use(authHandler.APIKeyAuth(), handlers.ResponseLogger())
 		api.Any("*path", proxyHandler.ProxyHandler)
 
 	}

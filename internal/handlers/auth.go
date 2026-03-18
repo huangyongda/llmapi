@@ -24,8 +24,8 @@ type Session struct {
 }
 
 var (
-	sessions    = make(map[string]*Session)
-	sessionsMu  sync.RWMutex
+	sessions   = make(map[string]*Session)
+	sessionsMu sync.RWMutex
 )
 
 type AuthHandler struct {
@@ -268,6 +268,9 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		//保存用户id到context
+		c.Set("user_id", apiKey.UserID)
+		c.Set("apiKeyId", apiKey.ID)
 
 		if available <= 0 {
 			c.JSON(http.StatusForbidden, gin.H{"error": "Request limit exceeded"})
