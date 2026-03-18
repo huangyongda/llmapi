@@ -47,7 +47,7 @@ func (h *ProxyHandler) HandleChatCompletions(c *gin.Context) {
 	h.proxyService.ProxyRequest(c.Writer, c.Request, ak)
 }
 
-func (h *ProxyHandler) ProxyHandlerOld(c *gin.Context) {
+func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 
 	var targetHost string
 
@@ -161,7 +161,7 @@ func (h *ProxyHandler) ProxyHandlerOld(c *gin.Context) {
 	}
 }
 
-func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
+func (h *ProxyHandler) ProxyHandlerNew(c *gin.Context) {
 	startTime := time.Now()
 
 	var targetHost string
