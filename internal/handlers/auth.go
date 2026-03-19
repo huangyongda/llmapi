@@ -288,6 +288,30 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 			apiKeyValue = xapiKey
 		}
 
+		blockedPaths := []string{
+			"v1/image_generation",
+			"v1/t2a_v2",
+			"v1/t2a_async_v2",
+			"v1/files/upload",
+			"v1/voice_clone",
+			"v1/voice_design",
+			"v1/video",
+			"v1/music_generation",
+			"v1/lyrics_generation",
+
+			// 后续可以继续加
+		}
+
+		for _, p := range blockedPaths {
+			if strings.Contains(c.Request.URL.Path, p) {
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"error": "不支持这接口",
+				})
+				c.Abort()
+				return
+			}
+		}
+
 		// 验证API Key
 		apiKeyService := services.NewAPIKeyService()
 		fmt.Println("apiKeyValue:", apiKeyValue)
