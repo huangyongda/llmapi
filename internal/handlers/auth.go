@@ -24,8 +24,10 @@ type Session struct {
 }
 
 var (
-	sessions   = make(map[string]*Session)
-	sessionsMu sync.RWMutex
+	sessions        = make(map[string]*Session)
+	sessionsMu      sync.RWMutex
+	userConcurrency = &sync.Map{} // map[int64]chan struct{}，每个用户一个容量为1的信号量
+
 )
 
 type AuthHandler struct {
@@ -215,6 +217,42 @@ func (h *AuthHandler) AdminRequired() gin.HandlerFunc {
 	}
 }
 
+// tryAcquireUserLock 尝试获取用户并发锁（非阻塞）
+// 返回 true 表示获取成功，可以处理请求
+// 返回 false 表示该用户已有请求在处理中
+func tryAcquireUserLock(userID int64) bool {
+	// 获取或创建该用户的信号量（容量为1的channel）
+	value, _ := userConcurrency.LoadOrStore(userID, make(chan struct{}, 1))
+	sem := value.(chan struct{})
+
+	// 非阻塞尝试获取
+	select {
+	case sem <- struct{}{}:
+		return true
+	default:
+		return false
+	}
+}
+
+// releaseUserLock 释放用户并发锁
+func releaseUserLock(userID int64) {
+	value, ok := userConcurrency.Load(userID)
+	if !ok {
+		return
+	}
+	sem := value.(chan struct{})
+	// 非阻塞释放，避免重复释放导致panic
+	select {
+	case <-sem:
+	default:
+	}
+}
+
+// cleanupUserLock 用户登出或会话过期时清理并发锁资源（可选）
+func cleanupUserLock(userID int64) {
+	userConcurrency.Delete(userID)
+}
+
 // APIKeyAuth API Key认证中间件
 func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -259,6 +297,18 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+
+		// ============ 并发限制开始 ============
+		// 尝试获取该用户的并发锁
+		if !tryAcquireUserLock(apiKey.UserID) {
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error": "Concurrent request limit exceeded. Please wait for previous request to complete.超过并发数量",
+			})
+			c.Abort()
+			return
+		}
+		// 确保请求结束时释放锁
+		defer releaseUserLock(apiKey.UserID)
 
 		// 检查用户额度
 		userService := services.NewUserService()
