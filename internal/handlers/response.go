@@ -152,9 +152,21 @@ func ResponseLogger() gin.HandlerFunc {
 		go SaveResponseUsage(userId, apiKeyId, result, result.Model, latencyMs)
 
 		curUseApiKey, _ := c.Get("cur_use_api_key")
+		//key后缀（7个字符）
+		keySuffix := ""
+		if curUseApiKey != nil {
+			keyStr := curUseApiKey.(string)
+			if len(keyStr) > 7 {
+				keySuffix = keyStr[len(keyStr)-7:]
+			} else {
+				keySuffix = keyStr
+			}
+		}
 		useNum := config.AppConfig.LLM.GetKeyUseInfo(curUseApiKey.(string))
+		useNum += 1 // 因为在proxy里是请求前获取的key，所以这里+1更接近当前使用量
 		//时间 和 Response
-		fmt.Println("Time:", time.Now().Format("2006-01-02 15:04:05"), "Current Usage:", useNum, "Response:", responseBody)
+
+		fmt.Println("userId:", userId, ",keySuffix:", keySuffix, ",Time:", time.Now().Format("2006-01-02 15:04:05"), ",Current Usage:", useNum, ",llmResponse:", responseBody)
 	}
 }
 
