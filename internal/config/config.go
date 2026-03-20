@@ -40,8 +40,10 @@ type LLMConfig struct {
 	ModelMapping map[string]string `mapstructure:"model_mapping"`
 
 	// 内部状态
-	keyIndex int
-	keyMutex sync.Mutex
+	keyIndex    int
+	keyMutex    sync.Mutex
+	keyUseCount map[string]int // 记录每个key当前被使用的数量
+	useCountMu  sync.Mutex
 }
 
 type AdminConfig struct {
@@ -81,7 +83,7 @@ func (c *Config) GetMySQLDSN() string {
 	)
 }
 
-// GetNextAPIKey 轮询获取下一个 API key
+// GetNextAPIKey 轮询获取下一个 API key，使用计数+1
 func (c *LLMConfig) GetNextAPIKey() string {
 	key := tools.Selector.Select()
 
@@ -94,7 +96,45 @@ func (c *LLMConfig) GetNextAPIKey() string {
 
 	// key := c.APIKeys[c.keyIndex]
 	// c.keyIndex = (c.keyIndex + 1) % len(c.APIKeys)
+
+	// 增加该key的使用计数
+	c.useCountMu.Lock()
+	if c.keyUseCount == nil {
+		c.keyUseCount = make(map[string]int)
+	}
+	c.keyUseCount[key]++
+	c.useCountMu.Unlock()
+
 	return key
+}
+
+// ReleaseAPIKey 释放指定key，使用计数-1
+func (c *LLMConfig) ReleaseAPIKey(key string) {
+	c.useCountMu.Lock()
+	defer c.useCountMu.Unlock()
+	if c.keyUseCount == nil {
+		c.keyUseCount = make(map[string]int)
+	}
+	if c.keyUseCount[key] > 0 {
+		c.keyUseCount[key]--
+	}
+}
+
+// GetCurUseInfo 获取所有key当前并发使用的个数
+func (c *LLMConfig) GetCurUseInfo() map[string]int {
+	c.useCountMu.Lock()
+	defer c.useCountMu.Unlock()
+	result := make(map[string]int)
+	for k, v := range c.keyUseCount {
+		result[k] = v
+	}
+	return result
+}
+
+func (c *LLMConfig) GetKeyUseInfo(key string) int {
+	c.useCountMu.Lock()
+	defer c.useCountMu.Unlock()
+	return c.keyUseCount[key]
 }
 
 // GetAPIKey 获取当前索引的 API key（不轮询）

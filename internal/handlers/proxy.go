@@ -109,15 +109,18 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 	req.Header = c.Request.Header.Clone()
 
 	// ===== 替换 API Key =====
+	key := config.AppConfig.LLM.GetNextAPIKey()
 	if hasXApiKey {
 		// Anthropic
-		req.Header.Set("x-api-key", config.AppConfig.LLM.GetNextAPIKey())
+		req.Header.Set("x-api-key", key)
 		req.Header.Del("Authorization")
 	} else {
 		// OpenAI
-		req.Header.Set("Authorization", "Bearer "+config.AppConfig.LLM.GetNextAPIKey())
+		req.Header.Set("Authorization", "Bearer "+key)
 		req.Header.Del("x-api-key")
 	}
+	c.Set("cur_use_api_key", key)
+	defer config.AppConfig.LLM.ReleaseAPIKey(key)
 	req.Host = target.Hostname()
 
 	// HTTP Client（支持流式）

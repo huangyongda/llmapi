@@ -274,11 +274,11 @@ func cleanupUserLock(userID int64) {
 func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		fmt.Println("=== Request Headers ===")
-		for key, values := range c.Request.Header {
-			fmt.Printf("%-20s: %s\n", key, strings.Join(values, ", "))
-		}
-		fmt.Println("=======================")
+		// fmt.Println("=== Request Headers ===")
+		// for key, values := range c.Request.Header {
+		// 	fmt.Printf("%-20s: %s\n", key, strings.Join(values, ", "))
+		// }
+		// fmt.Println("=======================")
 
 		authHeader := c.GetHeader("Authorization")
 		xapiKey := c.GetHeader("x-api-key")

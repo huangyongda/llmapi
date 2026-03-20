@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"llmapi/internal/config"
 	"llmapi/internal/services"
 	"strings"
 	"time"
@@ -80,7 +81,7 @@ func ResponseLogger() gin.HandlerFunc {
 
 		encoding := c.Writer.Header().Get("Content-Encoding")
 
-		fmt.Println("Encoding:", encoding)
+		// fmt.Println("Encoding:", encoding)
 		if encoding == "gzip" {
 			reader, err := gzip.NewReader(bytes.NewReader(bodyBytes))
 			if err != nil {
@@ -111,7 +112,7 @@ func ResponseLogger() gin.HandlerFunc {
 
 			for _, line := range lines {
 				if strings.Contains(line, `"type":"message_delta"`) {
-					fmt.Println(line)
+					// fmt.Println(line)
 					lastDataLine = line
 				}
 			}
@@ -124,8 +125,8 @@ func ResponseLogger() gin.HandlerFunc {
 				}
 
 			}
-			fmt.Println("=== Response ===")
-			fmt.Println(lastDataLine)
+			// fmt.Println("=== Response ===")
+			// fmt.Println(lastDataLine)
 
 		}
 
@@ -136,8 +137,8 @@ func ResponseLogger() gin.HandlerFunc {
 			lastDataLine = responseBody
 		}
 
-		fmt.Println("=== Response ===")
-		fmt.Println("lastDataLine", lastDataLine)
+		// fmt.Println("=== Response ===")
+		// fmt.Println("lastDataLine", lastDataLine)
 		//把lastDataLine 转换成json
 		var result JsonResponse
 		err := json.Unmarshal([]byte(lastDataLine), &result)
@@ -147,10 +148,13 @@ func ResponseLogger() gin.HandlerFunc {
 		if result.BaseResp.StatusCode != 0 && result.Type == "" {
 			fmt.Println("minimax返回错误:", result.BaseResp.StatusMsg, ",userid:", userId, "完整返回:", result)
 		}
-		fmt.Println("json result:", result.Usage)
+		// fmt.Println("json result:", result.Usage)
 		go SaveResponseUsage(userId, apiKeyId, result, result.Model, latencyMs)
 
-		fmt.Println("Response:", responseBody)
+		curUseApiKey, _ := c.Get("cur_use_api_key")
+		useNum := config.AppConfig.LLM.GetKeyUseInfo(curUseApiKey.(string))
+		//时间 和 Response
+		fmt.Println("Time:", time.Now().Format("2006-01-02 15:04:05"), "Current Usage:", useNum, "Response:", responseBody)
 	}
 }
 
