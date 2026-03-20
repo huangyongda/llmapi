@@ -217,12 +217,29 @@ func (h *AuthHandler) AdminRequired() gin.HandlerFunc {
 	}
 }
 
+// getUserConcurrencyLimit 根据当前时间返回用户的并发限制
+// 下午15:00-17:30：1个并发，其他时间段：2个并发
+func getUserConcurrencyLimit() int {
+	hour := time.Now().Hour()
+	minute := time.Now().Minute()
+
+	// 下午15:00-17:30（17:30即17点30分）限制为1个并发
+	if (hour == 15 && minute >= 0) || (hour >= 16 && hour < 17) || (hour == 17 && minute <= 30) {
+		return 1
+	}
+	// 其他时间段限制为2个并发
+	return 2
+}
+
 // tryAcquireUserLock 尝试获取用户并发锁（非阻塞）
 // 返回 true 表示获取成功，可以处理请求
 // 返回 false 表示该用户已有请求在处理中
 func tryAcquireUserLock(userID int64) bool {
-	// 获取或创建该用户的信号量（容量为1的channel）
-	value, _ := userConcurrency.LoadOrStore(userID, make(chan struct{}, 1))
+	// 根据当前时间段获取对应的并发限制
+	limit := getUserConcurrencyLimit()
+
+	// 获取或创建该用户的信号量
+	value, _ := userConcurrency.LoadOrStore(userID, make(chan struct{}, limit))
 	sem := value.(chan struct{})
 
 	// 非阻塞尝试获取
@@ -326,7 +343,7 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 		// 尝试获取该用户的并发锁
 		if !tryAcquireUserLock(apiKey.UserID) {
 			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error": "Concurrent request limit exceeded. Please wait for previous request to complete.超过并发数量",
+				"error": "超过并发数量",
 			})
 			c.Abort()
 			return
