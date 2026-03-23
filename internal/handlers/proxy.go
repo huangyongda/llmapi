@@ -179,6 +179,8 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 			}
 		}
 
+		c.Set("retry_num", retry)
+
 		c.Status(resp.StatusCode)
 
 		// 写入响应体
