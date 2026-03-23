@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -255,7 +256,13 @@ func executeTask() {
 		//current_interval_usage_count
 		current_interval_usage_count := 0
 		for _, modelRemain := range upstreamResp["model_remains"].([]interface{}) {
+			model_name := modelRemain.(map[string]interface{})["model_name"].(string)
+			//model_name 不包含 "MiniMax-M" 跳过
+			if !strings.Contains(model_name, "MiniMax-M") {
+				continue
+			}
 			current_interval_usage_count = int(modelRemain.(map[string]interface{})["current_interval_usage_count"].(float64))
+
 		}
 
 		// apiWeights[i] 如果存在 则用 否则默认为1(float32)
