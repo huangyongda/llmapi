@@ -165,8 +165,10 @@ func ResponseLogger() gin.HandlerFunc {
 		useNum := config.AppConfig.LLM.GetKeyUseInfo(curUseApiKey.(string))
 		useNum += 1 // 因为在proxy里是请求前获取的key，所以这里+1更接近当前使用量
 		//时间 和 Response
+		// 获取当前返回的http状态码
+		httpStatusCode := c.Writer.Status()
 
-		fmt.Println("userId:", userId, ",keySuffix:", keySuffix, ",Time:", time.Now().Format("2006-01-02 15:04:05"), ",Current Usage:", useNum, ",llmResponse:", responseBody)
+		fmt.Println("httpStatusCode:", httpStatusCode, ",userId:", userId, ",keySuffix:", keySuffix, ",Time:", time.Now().Format("2006-01-02 15:04:05"), ",Current Usage:", useNum, ",llmResponse:", responseBody)
 	}
 }
 

@@ -32,6 +32,7 @@ type DatabaseConfig struct {
 
 type LLMConfig struct {
 	Provider     string            `mapstructure:"provider"`
+	MaxRetrys    int               `mapstructure:"max_retries"`
 	APIURL       string            `mapstructure:"api_url"`
 	APIKeys      []string          `mapstructure:"api_keys"`
 	APIWeights   []float32         `mapstructure:"api_weights"`

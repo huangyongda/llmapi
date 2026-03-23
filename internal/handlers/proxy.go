@@ -94,64 +94,99 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 	}
 	defer c.Request.Body.Close()
 
-	// 创建请求（使用读取后的 body）
-	req, err := http.NewRequest(
-		c.Request.Method,
-		targetURL.String(),
-		bytes.NewReader(requestBody),
-	)
-	if err != nil {
-		c.String(http.StatusInternalServerError, err.Error())
-		return
+	// ===== 重试机制：最多重试3次 =====
+	//最大次数读取配置文件 如果没有配置则默认为3
+	maxRetries := config.AppConfig.LLM.MaxRetrys
+	if maxRetries <= 0 {
+		maxRetries = 3
 	}
-
-	// 复制 header
-	req.Header = c.Request.Header.Clone()
-
+	var resp *http.Response
 	// ===== 替换 API Key =====
 	key := config.AppConfig.LLM.GetNextAPIKey()
-	if hasXApiKey {
-		// Anthropic
-		req.Header.Set("x-api-key", key)
-		req.Header.Del("Authorization")
-	} else {
-		// OpenAI
-		req.Header.Set("Authorization", "Bearer "+key)
-		req.Header.Del("x-api-key")
-	}
-	c.Set("cur_use_api_key", key)
 	defer config.AppConfig.LLM.ReleaseAPIKey(key)
-	req.Host = target.Hostname()
-
-	// HTTP Client（支持流式）
-	client := &http.Client{
-
-		Transport: &http.Transport{
-			MaxIdleConns:        100,
-			MaxIdleConnsPerHost: 100,
-		},
-	}
-	// startTime := time.Now()
-	resp, err := client.Do(req)
-	if err != nil {
-		c.String(http.StatusBadGateway, err.Error())
-		return
-	}
-	defer resp.Body.Close()
-
-	// 复制响应头
-	for k, vv := range resp.Header {
-		for _, v := range vv {
-			c.Writer.Header().Add(k, v)
+	for retry := 0; retry < maxRetries; retry++ {
+		// 创建请求（使用读取后的 body）
+		req, err := http.NewRequest(
+			c.Request.Method,
+			targetURL.String(),
+			bytes.NewReader(requestBody),
+		)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
 		}
-	}
 
-	c.Status(resp.StatusCode)
+		// 复制 header
+		req.Header = c.Request.Header.Clone()
 
-	// 流式透传
-	_, err = io.Copy(c.Writer, resp.Body)
-	if err != nil {
-		log.Println("Stream error:", err)
+		if hasXApiKey {
+			// Anthropic
+			req.Header.Set("x-api-key", key)
+			req.Header.Del("Authorization")
+		} else {
+			// OpenAI
+			req.Header.Set("Authorization", "Bearer "+key)
+			req.Header.Del("x-api-key")
+		}
+		c.Set("cur_use_api_key", key)
+
+		req.Host = target.Hostname()
+
+		// HTTP Client（支持流式）
+		client := &http.Client{
+
+			Transport: &http.Transport{
+				MaxIdleConns:        100,
+				MaxIdleConnsPerHost: 100,
+			},
+		}
+
+		resp, err = client.Do(req)
+		if err != nil {
+			if retry < maxRetries-1 {
+				fmt.Printf("Request failed, retrying (%d/%d): %v\n", retry+1, maxRetries, err)
+				time.Sleep(time.Second * 2)
+				continue
+			}
+			c.String(http.StatusBadGateway, err.Error())
+			return
+		}
+
+		// ===== 检查是否需要重试 =====
+		// 读取响应体内容用于判断
+		respBody, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			c.String(http.StatusBadGateway, "Failed to read response body")
+			return
+		}
+
+		// 判断是否包含 rate_limit_error
+		if strings.Contains(string(respBody), `"type":"error"`) &&
+			strings.Contains(string(respBody), `"type":"rate_limit_error"`) {
+			if retry < maxRetries-1 {
+				fmt.Printf("重试  (%d/%d) 返回内容: %s\n", retry+1, maxRetries, string(respBody))
+				time.Sleep(time.Second * 2)
+				continue
+			}
+		}
+
+		// ===== 响应正常，写入客户端 =====
+		// 复制响应头
+		for k, vv := range resp.Header {
+			for _, v := range vv {
+				c.Writer.Header().Add(k, v)
+			}
+		}
+
+		c.Status(resp.StatusCode)
+
+		// 写入响应体
+		_, err = c.Writer.Write(respBody)
+		if err != nil {
+			log.Println("Write response error:", err)
+		}
+		break
 	}
 
 	// latencyMs := int(time.Since(startTime).Milliseconds())
