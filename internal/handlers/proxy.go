@@ -186,7 +186,7 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 				fmt.Printf("重试  (%d/%d) 响应内容: %s\n", retry+1, maxRetries, string(respBody))
 				time.Sleep(time.Second * 2)
 			}
-			}
+
 		}
 
 		// ===== 响应正常，写入客户端 =====
