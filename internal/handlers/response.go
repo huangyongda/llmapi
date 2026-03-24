@@ -162,7 +162,10 @@ func ResponseLogger() gin.HandlerFunc {
 				keySuffix = keyStr
 			}
 		}
-		useNum := config.AppConfig.LLM.GetKeyUseInfo(curUseApiKey.(string))
+		useNum := 0
+		if key, ok := curUseApiKey.(string); ok {
+			useNum = config.AppConfig.LLM.GetKeyUseInfo(key)
+		}
 		useNum += 1 // 因为在proxy里是请求前获取的key，所以这里+1更接近当前使用量
 		//时间 和 Response
 		// 获取当前返回的http状态码
