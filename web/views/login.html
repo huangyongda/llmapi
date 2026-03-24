@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>登录 - LLM API</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/style.css?v=1.0">
 </head>
 <body>
     <div class="container">
@@ -19,6 +19,10 @@
                     <label for="password">密码</label>
                     <input type="password" id="password" name="password" required>
                 </div>
+                <div class="form-group remember-group">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember">记住我</label>
+                </div>
                 <div class="form-group">
                     <button type="submit" class="btn btn-primary btn-block">登录</button>
                 </div>
@@ -29,11 +33,35 @@
 
     <script src="/static/js/app.js"></script>
     <script>
+        // 页面加载时自动填充保存的账号密码
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedRemember = localStorage.getItem('remember');
+            if (savedRemember === 'true') {
+                const savedUsername = localStorage.getItem('savedUsername');
+                const savedPassword = localStorage.getItem('savedPassword');
+                if (savedUsername) document.getElementById('username').value = savedUsername;
+                if (savedPassword) document.getElementById('password').value = savedPassword;
+                document.getElementById('remember').checked = true;
+            }
+        });
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            const remember = document.getElementById('remember').checked;
             const errorDiv = document.getElementById('error');
+
+            // 保存或清除账号密码
+            if (remember) {
+                localStorage.setItem('remember', 'true');
+                localStorage.setItem('savedUsername', username);
+                localStorage.setItem('savedPassword', password);
+            } else {
+                localStorage.removeItem('remember');
+                localStorage.removeItem('savedUsername');
+                localStorage.removeItem('savedPassword');
+            }
 
             try {
                 const response = await fetch('/web/auth/login', {
