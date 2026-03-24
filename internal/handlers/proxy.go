@@ -180,6 +180,14 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 				continue
 			}
 		}
+		//{"type":"error","error":{"type":"server_error","message":"unknown error
+		if strings.Contains(string(respBody), `"type":"error","error":{"type":"server_error","message":"unknown error`) {
+			if retry < maxRetries-1 {
+				fmt.Printf("重试  (%d/%d) 响应内容: %s\n", retry+1, maxRetries, string(respBody))
+				time.Sleep(time.Second * 2)
+			}
+			}
+		}
 
 		// ===== 响应正常，写入客户端 =====
 		// 复制响应头
