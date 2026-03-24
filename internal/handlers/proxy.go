@@ -170,6 +170,16 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 				continue
 			}
 		}
+		//{"type":"error","error":{"type":"api_error","message":"unknown error
+		//且500状态码
+		if strings.Contains(string(respBody), `"type":"error","error":{"type":"api_error","message":"unknown error`) &&
+			resp.StatusCode == 500 {
+			if retry < maxRetries-1 {
+				fmt.Printf("重试  (%d/%d) 返回内容: %s\n", retry+1, maxRetries, string(respBody))
+				time.Sleep(time.Second * 2)
+				continue
+			}
+		}
 
 		// ===== 响应正常，写入客户端 =====
 		// 复制响应头
