@@ -185,6 +185,7 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 			if retry < maxRetries-1 {
 				fmt.Printf("重试  (%d/%d) 响应内容: %s\n", retry+1, maxRetries, string(respBody))
 				time.Sleep(time.Second * 2)
+				continue
 			}
 
 		}
