@@ -2,12 +2,8 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -225,45 +221,34 @@ func executeTask() {
 	}
 	apiWeights := config.AppConfig.LLM.APIWeights
 
-	url := "https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains"
+	// url := "https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains"
 
-	var results []map[string]interface{}
+	// var results []map[string]interface{}
 
 	for i, apiKey := range apiKeys {
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			continue
-		}
+		// req, err := http.NewRequest("GET", url, nil)
+		// if err != nil {
+		// 	continue
+		// }
 
-		req.Header.Set("Authorization", "Bearer "+apiKey)
-		req.Header.Set("Content-Type", "application/json")
+		// req.Header.Set("Authorization", "Bearer "+apiKey)
+		// req.Header.Set("Content-Type", "application/json")
 
-		client := &http.Client{Timeout: 30 * time.Second}
-		resp, err := client.Do(req)
-		if err != nil {
-			continue
-		}
-		defer resp.Body.Close()
+		// client := &http.Client{Timeout: 30 * time.Second}
+		// resp, err := client.Do(req)
+		// if err != nil {
+		// 	continue
+		// }
+		// defer resp.Body.Close()
 
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			continue
-		}
-		var upstreamResp map[string]interface{}
-		if err := json.Unmarshal(body, &upstreamResp); err != nil {
-			continue
-		}
-		//current_interval_usage_count
-		current_interval_usage_count := 0
-		for _, modelRemain := range upstreamResp["model_remains"].([]interface{}) {
-			model_name := modelRemain.(map[string]interface{})["model_name"].(string)
-			//model_name 不包含 "MiniMax-M" 跳过
-			if !strings.Contains(model_name, "MiniMax-M") {
-				continue
-			}
-			current_interval_usage_count = int(modelRemain.(map[string]interface{})["current_interval_usage_count"].(float64))
-
-		}
+		// body, err := io.ReadAll(resp.Body)
+		// if err != nil {
+		// 	continue
+		// }
+		// var upstreamResp map[string]interface{}
+		// if err := json.Unmarshal(body, &upstreamResp); err != nil {
+		// 	continue
+		// }
 
 		// apiWeights[i] 如果存在 则用 否则默认为1(float32)
 		weight := float32(1.0)
@@ -273,22 +258,50 @@ func executeTask() {
 			}
 		}
 
-		curWeight := int(weight * float32(current_interval_usage_count))
+		// fmt.Println(upstreamResp)
+		//current_interval_usage_count
+		// current_interval_usage_count := 0
+		// modelRemainsRaw, ok := upstreamResp["model_remains"]
 
+		curWeight := int(weight * float32(100))
 		tools.Selector.SetWeight(apiKey, curWeight)
 		fmt.Println(apiKey, ":set curWeight ", curWeight)
+		// fmt.Println("result 中 model_remains 不存在")
+		// continue
 
-		// 添加 key 索引标识
-		upstreamResp["key_index"] = i
-		results = append(results, upstreamResp)
+		// if !ok || modelRemainsRaw == nil {
+		// 	curWeight := int(weight * float32(1))
+		// 	tools.Selector.SetWeight(apiKey, curWeight)
+		// 	fmt.Println(apiKey, ":set curWeight ", curWeight)
+		// 	fmt.Println("result 中 model_remains 不存在")
+		// 	continue
+		// }
+		// for _, modelRemain := range modelRemainsRaw.([]interface{}) {
+		// 	model_name := modelRemain.(map[string]interface{})["model_name"].(string)
+		// 	//model_name 不包含 "MiniMax-M" 跳过
+		// 	if !strings.Contains(model_name, "MiniMax-M") {
+		// 		continue
+		// 	}
+		// 	current_interval_usage_count = int(modelRemain.(map[string]interface{})["current_interval_usage_count"].(float64))
+
+		// }
+
+		// curWeight := int(weight * float32(current_interval_usage_count))
+
+		// tools.Selector.SetWeight(apiKey, curWeight)
+		// fmt.Println(apiKey, ":set curWeight ", curWeight)
+
+		// // 添加 key 索引标识
+		// upstreamResp["key_index"] = i
+		// results = append(results, upstreamResp)
 	}
-	for _, result := range results {
-		//输出 current_interval_usage_count
-		current_interval_usage_count := 0
-		for _, modelRemain := range result["model_remains"].([]interface{}) {
-			current_interval_usage_count = int(modelRemain.(map[string]interface{})["current_interval_usage_count"].(float64))
-		}
-		fmt.Println("key_index:", result["key_index"], "current_interval_usage_count:", current_interval_usage_count)
-	}
+	// for _, result := range results {
+	// 	//输出 current_interval_usage_count
+	// 	current_interval_usage_count := 0
+	// 	for _, modelRemain := range result["model_remains"].([]interface{}) {
+	// 		current_interval_usage_count = int(modelRemain.(map[string]interface{})["current_interval_usage_count"].(float64))
+	// 	}
+	// 	fmt.Println("key_index:", result["key_index"], "current_interval_usage_count:", current_interval_usage_count)
+	// }
 	// fmt.Println(results)
 }
