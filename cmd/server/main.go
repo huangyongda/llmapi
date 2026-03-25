@@ -309,8 +309,8 @@ func executeTask() {
 			}
 			current_interval_usage_count = int(modelRemain.CurrentIntervalUsageCount)
 			//说明是有周限额 如果 当前时间在 0点10点 或者18点 到0点 则   current_interval_usage_count 为0
-			// hour := time.Now().Hour()
-			hour := 9
+			hour := time.Now().Hour()
+			// hour := 9
 			if modelRemain.CurrentWeeklyTotalCount > 0 && (hour < 10 || hour >= 18) {
 				current_interval_usage_count = 0
 				fmt.Printf("当前时间 %d 点，重置当前区间使用量为0 ,KEY: %s\n", hour, apiKey)
