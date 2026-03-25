@@ -295,6 +295,8 @@ func executeTask() {
 		// 检查响应状态
 		if respInfo.BaseResp.StatusCode != 0 {
 			log.Printf("API %s 返回错误：%s", apiKey, respInfo.BaseResp.StatusMsg)
+			tools.Selector.SetWeight(apiKey, 0)
+			fmt.Println(apiKey, "返回错误 :set curWeight ", 0)
 			continue
 		}
 
