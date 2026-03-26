@@ -41,17 +41,17 @@
                 <div id="renewalPanel" class="renewal-panel">
                     <h3>选择续费套餐</h3>
                     <div class="renewal-options">
-                        <div class="renewal-card" data-plan="month">
+                        <div class="renewal-card month-card" data-plan="month">
                             <h4>月卡</h4>
                             <p class="price">¥19.9</p>
                             <p class="desc">30天有效期</p>
                         </div>
-                        <div class="renewal-card" data-plan="quarter">
+                        <div class="renewal-card quarter-card" data-plan="quarter">
                             <h4>季度卡</h4>
                             <p class="price">¥56.71</p>
                             <p class="desc">90天有效期（95折扣）</p>
                         </div>
-                        <div class="renewal-card" data-plan="half">
+                        <!-- <div class="renewal-card" data-plan="half">
                             <h4>半年卡</h4>
                             <p class="price">¥107.46</p>
                             <p class="desc">180天有效期（9折）</p>
@@ -60,7 +60,7 @@
                             <h4>年卡</h4>
                             <p class="price">¥199.9</p>
                             <p class="desc">365天有效期（85折）</p>
-                        </div>
+                        </div> -->
                     </div>
                     <button id="closeRenewal" class="btn btn-sm">关闭</button>
                 </div>
@@ -349,6 +349,14 @@
                     //xufei
                     document.querySelector('.xufei').style.display = 'none';
 
+                }
+                if ( userData.remark == '批量卖出') {
+                    document.querySelector('.xufei').style.display = 'none';
+                }
+
+                if (userData.request_limit >= 1000) {
+                    document.querySelector('.month-card .price').textContent = '¥ 29.99';
+                    document.querySelector('.quarter-card .price').textContent = '¥ 85';
                 }
                 
 
