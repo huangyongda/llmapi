@@ -89,8 +89,13 @@ func (c *Config) GetMySQLDSN() string {
 
 // GetNextAPIKey 轮询获取下一个 API key，使用计数+1
 func (c *LLMConfig) GetNextAPIKey(con *gin.Context) string {
-	// if con.Get("")
-	key := tools.Selector.Select()
+	key := ""
+	level, _ := con.Get("level")
+	if level == 1 {
+		key = tools.Selector.Select()
+	} else {
+		key = tools.Selector2.Select()
+	}
 
 	// if len(c.APIKeys) == 0 {
 	// 	return ""

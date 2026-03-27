@@ -359,7 +359,7 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		c.Set("user", user)
+		c.Set("level", user.Level)
 		//保存用户id到context
 		c.Set("user_id", apiKey.UserID)
 		c.Set("apiKeyId", apiKey.ID)
