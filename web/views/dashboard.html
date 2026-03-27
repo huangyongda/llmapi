@@ -353,6 +353,9 @@
                 if ( userData.remark == '批量卖出') {
                     document.querySelector('.xufei').style.display = 'none';
                 }
+                if ( userData.level == 2) {
+                    document.querySelector('.xufei').style.display = 'none';
+                }
 
                 if (userData.request_limit >= 1000) {
                     document.querySelector('.month-card .price').textContent = '¥ 29.99';
