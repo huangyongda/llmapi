@@ -403,7 +403,7 @@ func (h *ProxyHandler) HandleModels(c *gin.Context) {
 
 func (h *ProxyHandler) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"message": config.AppConfig.LLM.GetNextAPIKey(),
+		"message": "success",
 		"status":  "ok",
 	})
 }

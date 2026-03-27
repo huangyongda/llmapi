@@ -306,12 +306,12 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 		}
 
 		blockedPaths := []string{
-			"v1/image_generation",
-			"v1/t2a_v2",
-			"v1/t2a_async_v2",
+			// "v1/image_generation",
+			// "v1/t2a_v2",
+			// "v1/t2a_async_v2",
 			"v1/files/upload",
-			"v1/voice_clone",
-			"v1/voice_design",
+			// "v1/voice_clone",
+			// "v1/voice_design",
 			"v1/video",
 			"v1/music_generation",
 			"v1/lyrics_generation",
