@@ -61,6 +61,7 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 		RequestLimit int        `json:"request_limit"`
 		ExpiresAt    *time.Time `json:"expires_at"`
 		Remark       string     `json:"remark"`
+		Level        int        `json:"level"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -74,7 +75,12 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 		req.ExpiresAt = &defaultExpiresAt
 	}
 
-	user, err := h.userService.CreateUser(req.Username, req.Password, req.RequestLimit, false, req.ExpiresAt, req.Remark)
+	// 默认 level 为 1
+	if req.Level == 0 {
+		req.Level = 1
+	}
+
+	user, err := h.userService.CreateUser(req.Username, req.Password, req.RequestLimit, false, req.ExpiresAt, req.Remark, req.Level)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -94,6 +100,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		RequestLimit int        `json:"request_limit"`
 		ExpiresAt    *time.Time `json:"expires_at"`
 		Remark       string     `json:"remark"`
+		Level        int        `json:"level"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -101,7 +108,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	if err := h.userService.UpdateUser(userID, req.RequestLimit, req.ExpiresAt, req.Remark); err != nil {
+	if err := h.userService.UpdateUser(userID, req.RequestLimit, req.ExpiresAt, req.Remark, req.Level); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -127,8 +134,15 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 func (h *AdminHandler) GetAPIKeys(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	keySearch := c.Query("key")
+	userIDStr := c.Query("user_id")
 
-	apiKeys, total, err := h.apiKeyService.GetAllAPIKeys(page, pageSize)
+	var userID int64
+	if userIDStr != "" {
+		userID, _ = strconv.ParseInt(userIDStr, 10, 64)
+	}
+
+	apiKeys, total, err := h.apiKeyService.GetAllAPIKeys(page, pageSize, keySearch, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -501,6 +515,7 @@ func (h *AdminHandler) CreateActivationUser(c *gin.Context) {
 		Password     string `json:"password" binding:"required"`
 		ValidDays    int    `json:"valid_days" binding:"required"`
 		RequestLimit int    `json:"request_limit" binding:"required"`
+		Level        int    `json:"level"`
 		Remarks      string `json:"remarks"`
 	}
 
@@ -509,7 +524,12 @@ func (h *AdminHandler) CreateActivationUser(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userService.CreateActivationUser(req.Username, req.Password, req.ValidDays, req.RequestLimit, req.Remarks)
+	// 默认 level 为 1
+	if req.Level == 0 {
+		req.Level = 1
+	}
+
+	user, err := h.userService.CreateActivationUser(req.Username, req.Password, req.ValidDays, req.RequestLimit, req.Remarks, req.Level)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -542,6 +562,7 @@ func (h *AdminHandler) BatchCreateActivationUsers(c *gin.Context) {
 			Password     string `json:"password" binding:"required"`
 			ValidDays    int    `json:"valid_days" binding:"required"`
 			RequestLimit int    `json:"request_limit" binding:"required"`
+			Level        int    `json:"level"`
 			Remarks      string `json:"remarks"`
 		} `json:"users" binding:"required"`
 	}
@@ -553,11 +574,16 @@ func (h *AdminHandler) BatchCreateActivationUsers(c *gin.Context) {
 
 	var activationUsers []models.ActivationUser
 	for _, u := range req.Users {
+		level := u.Level
+		if level == 0 {
+			level = 1
+		}
 		activationUsers = append(activationUsers, models.ActivationUser{
 			Username:     u.Username,
 			PasswordHash: u.Password, // 会在service中哈希
 			ValidDays:    u.ValidDays,
 			RequestLimit: u.RequestLimit,
+			Level:        level,
 			Remarks:      u.Remarks,
 		})
 	}

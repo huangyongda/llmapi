@@ -13,6 +13,7 @@ type User struct {
 	RequestLimit  int            `gorm:"default:0" json:"request_limit"`
 	RequestCount  int            `gorm:"default:0" json:"request_count"`
 	IsAdmin       bool           `gorm:"default:false" json:"is_admin"`
+	Level         int            `gorm:"default:1" json:"level"` // 1=普通用户 2=高速用户
 	ExpiresAt     *time.Time     `gorm:"index" json:"expires_at"`
 	Remark        string         `gorm:"size:500" json:"remark"`
 	CreatedAt     time.Time      `json:"created_at"`
@@ -31,6 +32,7 @@ type UserResponse struct {
 	RequestLimit int     `json:"request_limit"`
 	RequestCount int     `json:"request_count"`
 	IsAdmin      bool    `json:"is_admin"`
+	Level        int     `json:"level"`
 	ExpiresAt    *string `json:"expires_at"`
 	Remark       string  `json:"remark"`
 	CreatedAt    string  `json:"created_at"`
@@ -48,6 +50,7 @@ func (u *User) ToResponse() UserResponse {
 		RequestLimit: u.RequestLimit,
 		RequestCount: u.RequestCount,
 		IsAdmin:      u.IsAdmin,
+		Level:        u.Level,
 		ExpiresAt:    expiresAt,
 		Remark:       u.Remark,
 		CreatedAt:    u.CreatedAt.Format("2006-01-02 15:04:05"),
@@ -61,6 +64,7 @@ type ActivationUser struct {
 	PasswordHash string    `gorm:"size:255;not null" json:"-"`
 	ValidDays    int       `gorm:"default:0" json:"valid_days"`     // 有效天数
 	RequestLimit int       `gorm:"default:0" json:"request_limit"`  // 最高调用次数
+	Level        int       `gorm:"default:1" json:"level"`          // 1=普通用户 2=高速用户
 	Remarks      string    `gorm:"size:500" json:"remarks"`         // 备注
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
@@ -76,6 +80,7 @@ type ActivationUserResponse struct {
 	Username     string `json:"username"`
 	ValidDays    int    `json:"valid_days"`
 	RequestLimit int    `json:"request_limit"`
+	Level        int    `json:"level"`
 	Remarks      string `json:"remarks"`
 	CreatedAt    string `json:"created_at"`
 }
@@ -86,6 +91,7 @@ func (a *ActivationUser) ToResponse() ActivationUserResponse {
 		Username:     a.Username,
 		ValidDays:    a.ValidDays,
 		RequestLimit: a.RequestLimit,
+		Level:        a.Level,
 		Remarks:      a.Remarks,
 		CreatedAt:    a.CreatedAt.Format("2006-01-02 15:04:05"),
 	}

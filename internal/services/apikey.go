@@ -95,11 +95,22 @@ func (s *APIKeyService) GetAPIKeysByUserID(userID int64) ([]models.APIKey, error
 	return apiKeys, nil
 }
 
-func (s *APIKeyService) GetAllAPIKeys(page, pageSize int) ([]models.APIKey, int64, error) {
+func (s *APIKeyService) GetAllAPIKeys(page, pageSize int, keySearch string, userID int64) ([]models.APIKey, int64, error) {
 	var apiKeys []models.APIKey
 	var total int64
 
 	query := database.DB.Model(&models.APIKey{}).Preload("User")
+
+	// 按 key 值搜索（模糊匹配）
+	if keySearch != "" {
+		query = query.Where("key_value LIKE ?", "%"+keySearch+"%")
+	}
+
+	// 按用户ID搜索
+	if userID > 0 {
+		query = query.Where("user_id = ?", userID)
+	}
+
 	query.Count(&total)
 
 	offset := (page - 1) * pageSize
