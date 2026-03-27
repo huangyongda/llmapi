@@ -8,6 +8,7 @@ import (
 )
 
 var Selector *DynamicWeightedSelector
+var Selector2 *DynamicWeightedSelector
 
 // ============================================================================
 // 数据结构定义

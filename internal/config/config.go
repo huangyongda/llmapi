@@ -5,6 +5,7 @@ import (
 	"llmapi/tools"
 	"sync"
 
+	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
 
@@ -36,6 +37,8 @@ type LLMConfig struct {
 	APIURL       string            `mapstructure:"api_url"`
 	APIKeys      []string          `mapstructure:"api_keys"`
 	APIWeights   []float32         `mapstructure:"api_weights"`
+	APIKeys2     []string          `mapstructure:"api_keys2"`
+	APIWeights2  []float32         `mapstructure:"api_weights2"`
 	Timeout      int               `mapstructure:"timeout"`
 	ProxyURL     string            `mapstructure:"proxy_url"`
 	ModelMapping map[string]string `mapstructure:"model_mapping"`
@@ -85,7 +88,8 @@ func (c *Config) GetMySQLDSN() string {
 }
 
 // GetNextAPIKey 轮询获取下一个 API key，使用计数+1
-func (c *LLMConfig) GetNextAPIKey() string {
+func (c *LLMConfig) GetNextAPIKey(con *gin.Context) string {
+	// if con.Get("")
 	key := tools.Selector.Select()
 
 	// if len(c.APIKeys) == 0 {

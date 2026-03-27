@@ -181,12 +181,12 @@ func (s *UserService) IncrementRequestCount(userID int64) error {
 		Update("request_count", database.DB.Raw("request_count + 1")).Error
 }
 
-func (s *UserService) GetAvailableRequests(userID int64) (int, error) {
+func (s *UserService) GetAvailableRequests(userID int64) (int, *models.User, error) {
 	user, err := s.GetUserByID(userID)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
-	return user.RequestLimit - user.RequestCount, nil
+	return user.RequestLimit - user.RequestCount, user, nil
 }
 
 func (s *UserService) CheckAndDecrementLimit(userID int64) (bool, error) {

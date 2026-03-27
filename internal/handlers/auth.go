@@ -353,12 +353,13 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 
 		// 检查用户额度
 		userService := services.NewUserService()
-		available, err := userService.GetAvailableRequests(apiKey.UserID)
+		available, user, err := userService.GetAvailableRequests(apiKey.UserID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check user limit"})
 			c.Abort()
 			return
 		}
+		c.Set("user", user)
 		//保存用户id到context
 		c.Set("user_id", apiKey.UserID)
 		c.Set("apiKeyId", apiKey.ID)

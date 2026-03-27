@@ -34,6 +34,18 @@ func InitDynamicWeightedSelector() {
 	}
 	Selector := tools.NewDynamicWeightedSelector(keys)
 	tools.Selector = Selector
+
+	// 创建另一个动态权重选择器
+	keys2 := []tools.WeightedKey{}
+	for i := 0; i < len(config.AppConfig.LLM.APIKeys2); i++ {
+		key := tools.WeightedKey{
+			Key:    config.AppConfig.LLM.APIKeys2[i],
+			Weight: 1,
+		}
+		keys2 = append(keys2, key)
+	}
+	tools.Selector2 = tools.NewDynamicWeightedSelector(keys2)
+
 }
 
 func main() {
@@ -262,6 +274,28 @@ func executeTask() {
 		return
 	}
 	apiWeights := config.AppConfig.LLM.APIWeights
+	SetWeight(apiKeys, apiWeights)
+
+	apiKeys2 := config.AppConfig.LLM.APIKeys2
+	if len(apiKeys2) == 0 {
+		fmt.Print("LLM API keys2 not configured")
+		return
+	}
+	apiWeights2 := config.AppConfig.LLM.APIWeights2
+	SetWeight(apiKeys2, apiWeights2)
+
+	// fmt.Println(results)
+}
+
+func SetWeight(apiKeys []string, apiWeights []float32) {
+	defer func() {
+		if r := recover(); r != nil {
+			stack := debug.Stack()
+			log.Printf("任务   发生 panic: %v\n堆栈:\n%s", r, stack)
+			err := fmt.Errorf("任务执行失败: %v", r)
+			log.Printf("任务执行失败: %v", err)
+		}
+	}()
 
 	url := "https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains"
 
@@ -339,5 +373,4 @@ func executeTask() {
 
 		fmt.Println("key_index:", result.key_index, "current_interval_usage_count:", result.ModelRemains[0].CurrentIntervalUsageCount)
 	}
-	// fmt.Println(results)
 }

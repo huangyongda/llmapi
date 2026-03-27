@@ -102,7 +102,7 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 	}
 	var resp *http.Response
 	// ===== 替换 API Key =====
-	key := config.AppConfig.LLM.GetNextAPIKey()
+	key := config.AppConfig.LLM.GetNextAPIKey(c)
 	defer config.AppConfig.LLM.ReleaseAPIKey(key)
 	for retry := 0; retry < maxRetries; retry++ {
 		// 创建请求（使用读取后的 body）
@@ -287,11 +287,11 @@ func (h *ProxyHandler) ProxyHandlerNew(c *gin.Context) {
 	// ===== 替换 API Key =====
 	if hasXApiKey {
 		// Anthropic
-		req.Header.Set("x-api-key", config.AppConfig.LLM.GetNextAPIKey())
+		req.Header.Set("x-api-key", config.AppConfig.LLM.GetNextAPIKey(c))
 		req.Header.Del("Authorization")
 	} else {
 		// OpenAI
-		req.Header.Set("Authorization", "Bearer "+config.AppConfig.LLM.GetNextAPIKey())
+		req.Header.Set("Authorization", "Bearer "+config.AppConfig.LLM.GetNextAPIKey(c))
 		req.Header.Del("x-api-key")
 	}
 	req.Host = target.Hostname()
