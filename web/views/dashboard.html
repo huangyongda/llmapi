@@ -353,13 +353,19 @@
                 if ( userData.remark == '批量卖出') {
                     document.querySelector('.xufei').style.display = 'none';
                 }
-                if ( userData.level == 2) {
-                    document.querySelector('.xufei').style.display = 'none';
-                }
+                
 
                 if (userData.request_limit >= 1000) {
                     document.querySelector('.month-card .price').textContent = '¥ 29.99';
                     document.querySelector('.quarter-card .price').textContent = '¥ 85';
+                }
+                if ( userData.level == 2 && userData.request_limit >= 500) {
+                    document.querySelector('.month-card .price').textContent = '¥ 29.99';
+                    document.querySelector('.quarter-card .price').textContent = '¥ 85';
+                }
+                if ( userData.level == 2 && userData.request_limit >= 1000) {
+                    document.querySelector('.month-card .price').textContent = '¥ 43.99';
+                    document.querySelector('.quarter-card .price').textContent = '¥ 125';
                 }
                 
 
