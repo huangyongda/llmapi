@@ -5,111 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>仪表盘 - LLM API</title>
     <link rel="stylesheet" href="/static/css/style.css?v=2.0.0">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <nav class="navbar">
-                <h1>LLM API</h1>
-                <div class="nav-links">
-                    <a href="/help.html" class="nav-link">使用说明</a>
-                    <span id="username"></span>
-                    <span id="uid" style="display: none;"></span>
-                    <button id="logoutBtn" class="btn btn-sm">退出</button>
-                </div>
-            </nav>
-        </header>
-
-        <main>
-            <section class="stats-section">
-                <h2>baseUrl: http://120.24.86.32:3000</h2>
-                <p><b>注意:</b>记得替换 base_url 比如:【https://api.minimaxi.com/后缀】 >>替换 【http://120.24.86.32:3000/后缀】 </p>
-            </section>
-            <section class="stats-section" id="feedbackSection" style="display: none;">
-                <h2 style="color: red;">好评 额度+100, 30字好评 额度+200 直接闲鱼找我</h2>
-            </section>
-
-            <section class="stats-section">
-
-                <h2>用量统计</h2>
-                <div class="stat-card-full">
-                    <h3>过期时间</h3>
-                    <p class="stat-value" id="expiresAt">-</p>
-                    <button id="renewBtn" class="btn btn-primary xufei">续费</button>
-                </div>
-                <!-- 续费面板 -->
-                <div id="renewalPanel" class="renewal-panel">
-                    <h3>选择续费套餐</h3>
-                    <div class="renewal-options">
-                        <div class="renewal-card month-card" data-plan="month">
-                            <h4>月卡</h4>
-                            <p class="price">¥19.9</p>
-                            <p class="desc">30天有效期</p>
-                        </div>
-                        <div class="renewal-card quarter-card" data-plan="quarter">
-                            <h4>季度卡</h4>
-                            <p class="price">¥56.71</p>
-                            <p class="desc">90天有效期（95折扣）</p>
-                        </div>
-                        <!-- <div class="renewal-card" data-plan="half">
-                            <h4>半年卡</h4>
-                            <p class="price">¥107.46</p>
-                            <p class="desc">180天有效期（9折）</p>
-                        </div>
-                        <div class="renewal-card" data-plan="year">
-                            <h4>年卡</h4>
-                            <p class="price">¥199.9</p>
-                            <p class="desc">365天有效期（85折）</p>
-                        </div> -->
-                    </div>
-                    <button id="closeRenewal" class="btn btn-sm">关闭</button>
-                </div>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3>可用次数</h3>
-                        <p class="stat-value" id="availableRequests">-</p>
-                        <!-- HTML 结构 -->
-                        <div class="progress-container">
-                            <div class="progress-bar" id="myProgressBar">
-                                <span class="progress-text" id="progressText">0%</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>已用次数</h3>
-                        <p class="stat-value" id="usedRequests">-</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>总调用次数</h3>
-                        <p class="stat-value" id="totalRequests">-</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>下一次刷新</h3>
-                        <p class="stat-value" id="nextTime">-</p>
-                    </div>
-                </div>
-            </section>
-
-            <section class="apikeys-section">
-                <div class="section-header">
-                    <h2>API Keys</h2>
-                    <button id="createKeyBtn" class="btn btn-primary">创建 API Key</button>
-                </div>
-                <div id="apiKeysList" class="apikeys-list">
-                    <!-- API Keys will be loaded here -->
-                </div>
-            </section>
-
-            <section class="usage-section">
-                <h2>使用记录</h2>
-                <div id="usageList" class="usage-list">
-                    <!-- Usage logs will be loaded here -->
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <script src="/static/js/app.js"></script>
     <style>
         /* 续费面板样式 */
         .renewal-panel {
@@ -197,6 +92,113 @@
             }
         }
     </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <nav class="navbar">
+                <h1>LLM API</h1>
+                <div class="nav-links">
+                    <a href="/help.html" class="nav-link">使用说明</a>
+                    <span id="username"></span>
+                    <span id="uid" style="display: none;"></span>
+                    <button id="logoutBtn" class="btn btn-sm">退出</button>
+                </div>
+            </nav>
+        </header>
+
+        <main>
+            <section class="stats-section">
+                <h2>baseUrl: http://120.24.86.32:3000</h2>
+                <p><b>注意:</b>记得替换 base_url 比如:【https://api.minimaxi.com/后缀】 >>替换 【http://120.24.86.32:3000/后缀】 </p>
+                <h2 style="color: red;">模型 MiniMax-M2.5 MiniMax-M2.7 都可以用 </h2>
+            </section>
+            <section class="stats-section" id="feedbackSection" style="display: none;">
+                <h2 style="color: red;">好评 额度+100, 30字好评 额度+200 直接闲鱼找我</h2>
+            </section>
+
+            <section class="stats-section">
+
+                <h2>用量统计</h2>
+                <div class="stat-card-full">
+                    <h3>过期时间</h3>
+                    <p class="stat-value" id="expiresAt">-</p>
+                    <button id="renewBtn" class="btn btn-primary xufei">续费</button>
+                </div>
+                <!-- 续费面板 -->
+                <div id="renewalPanel" class="renewal-panel">
+                    <h3>选择续费套餐</h3>
+                    <div class="renewal-options">
+                        <div class="renewal-card month-card" data-plan="month">
+                            <h4>月卡</h4>
+                            <p class="price">¥19.9</p>
+                            <p class="desc">30天有效期</p>
+                        </div>
+                        <div class="renewal-card quarter-card" data-plan="quarter">
+                            <h4>季度卡</h4>
+                            <p class="price">¥56.71</p>
+                            <p class="desc">90天有效期（95折扣）</p>
+                        </div>
+                        <!-- <div class="renewal-card" data-plan="half">
+                            <h4>半年卡</h4>
+                            <p class="price">¥107.46</p>
+                            <p class="desc">180天有效期（9折）</p>
+                        </div>
+                        <div class="renewal-card" data-plan="year">
+                            <h4>年卡</h4>
+                            <p class="price">¥199.9</p>
+                            <p class="desc">365天有效期（85折）</p>
+                        </div> -->
+                    </div>
+                    <button id="closeRenewal" class="btn btn-sm">关闭</button>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>可用次数</h3>
+                        <p class="stat-value" id="availableRequests">-</p>
+                        <!-- HTML 结构 -->
+                        <div class="progress-container">
+                            <div class="progress-bar" id="myProgressBar">
+                                <span class="progress-text" id="progressText">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>已用次数</h3>
+                        <p class="stat-value" id="usedRequests">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>总调用次数</h3>
+                        <p class="stat-value" id="totalRequests">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>下一次刷新</h3>
+                        <p class="stat-value" id="nextTime">-</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="apikeys-section">
+                <div class="section-header">
+                    <h2>API Keys</h2>
+                    <button id="createKeyBtn" class="btn btn-primary">创建 API Key</button>
+                </div>
+                <div id="apiKeysList" class="apikeys-list">
+                    <!-- API Keys will be loaded here -->
+                </div>
+            </section>
+
+            <section class="usage-section">
+                <h2>使用记录</h2>
+                <div id="usageList" class="usage-list">
+                    <!-- Usage logs will be loaded here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    
     <script>
         // Check if user is logged in
         const user = JSON.parse(localStorage.getItem('user'));
@@ -347,8 +349,6 @@
                 if (userData.request_limit <= 300 && userData.request_count > 0 && userData.remark !== '批量卖出') {
                     document.getElementById('feedbackSection').style.display = 'block';
                     //xufei
-                    document.querySelector('.xufei').style.display = 'none';
-
                 }
                 if ( userData.remark == '批量卖出') {
                     document.querySelector('.xufei').style.display = 'none';

@@ -170,6 +170,23 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 				continue
 			}
 		}
+		if strings.Contains(string(respBody), `"type":"error"`) &&
+			strings.Contains(string(respBody), `"type":"overloaded_error"`) {
+			if retry < maxRetries-1 {
+				fmt.Printf("重试  (%d/%d) 返回内容: %s\n", retry+1, maxRetries, string(respBody))
+				time.Sleep(time.Second * 2)
+				continue
+			}
+		}
+		//{"status_code":2064,"status_msg":"当前服务集群负载较高
+		if strings.Contains(string(respBody), `{"status_code":2064,"status_msg":"当前服务集群负载较高`) {
+			if retry < maxRetries-1 {
+				fmt.Printf("重试  (%d/%d) 返回内容: %s\n", retry+1, maxRetries, string(respBody))
+				time.Sleep(time.Second * 2)
+				continue
+			}
+		}
+
 		//{"type":"error","error":{"type":"api_error","message":"unknown error
 		//且500状态码
 		if strings.Contains(string(respBody), `"type":"error","error":{"type":"api_error","message":"unknown error`) &&

@@ -213,7 +213,7 @@ func main() {
 
 // 独立协程：每 60 秒执行一次
 func runTask(ctx context.Context) {
-	ticker := time.NewTicker(120 * time.Second)
+	ticker := time.NewTicker(50 * time.Second)
 	defer ticker.Stop()
 
 	fmt.Println("🕒 定时任务协程已启动")
