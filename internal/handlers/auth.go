@@ -345,6 +345,7 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"error": "超过并发数量",
 			})
+			fmt.Printf("用户 %d 请求过快，已达到并发限制\n", apiKey.UserID)
 			c.Abort()
 			return
 		}
