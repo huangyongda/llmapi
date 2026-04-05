@@ -132,6 +132,10 @@
                     <input type="number" name="request_limit" value="300" required>
                 </div>
                 <div class="form-group">
+                    <label>周额度限制（-1无限制，1有限制）</label>
+                    <input type="number" name="has_weekly_limit" value="-1" required>
+                </div>
+                <div class="form-group">
                     <label>过期时间（留空表示永不过期）</label>
                     <input type="datetime-local" name="expires_at">
                 </div>
@@ -158,6 +162,10 @@
                 <div class="form-group">
                     <label>请求次数限制</label>
                     <input type="number" name="request_limit" id="editRequestLimit" required>
+                </div>
+                <div class="form-group">
+                    <label>周额度限制（-1无限制，1有限制）</label>
+                    <input type="number" name="has_weekly_limit" id="editWeeklyLimit" value="-1" required>
                 </div>
                 <div class="form-group">
                     <label>过期时间（留空表示永不过期）</label>
@@ -216,6 +224,10 @@
                 <div class="form-group">
                     <label>等级</label>
                     <input type="number" name="level" required value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label>周额度限制（-1无限制，1有限制）</label>
+                    <input type="number" name="has_weekly_limit" required value="-1">
                 </div>
                 <div class="form-group">
                     <label>账号个数</label>

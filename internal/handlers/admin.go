@@ -56,12 +56,13 @@ func (h *AdminHandler) GetUsers(c *gin.Context) {
 
 func (h *AdminHandler) CreateUser(c *gin.Context) {
 	var req struct {
-		Username     string     `json:"username" binding:"required"`
-		Password     string     `json:"password" binding:"required"`
-		RequestLimit int        `json:"request_limit"`
-		ExpiresAt    *time.Time `json:"expires_at"`
-		Remark       string     `json:"remark"`
-		Level        int        `json:"level"`
+		Username        string     `json:"username" binding:"required"`
+		Password        string     `json:"password" binding:"required"`
+		RequestLimit    int        `json:"request_limit"`
+		ExpiresAt       *time.Time `json:"expires_at"`
+		Remark          string     `json:"remark"`
+		Level           int        `json:"level"`
+		HasWeeklyLimit  int        `json:"has_weekly_limit"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -80,7 +81,12 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 		req.Level = 1
 	}
 
-	user, err := h.userService.CreateUser(req.Username, req.Password, req.RequestLimit, false, req.ExpiresAt, req.Remark, req.Level)
+	// 默认 HasWeeklyLimit 为 -1（无限制）
+	if req.HasWeeklyLimit == 0 {
+		req.HasWeeklyLimit = -1
+	}
+
+	user, err := h.userService.CreateUser(req.Username, req.Password, req.RequestLimit, false, req.ExpiresAt, req.Remark, req.Level, req.HasWeeklyLimit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -97,10 +103,11 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	}
 
 	var req struct {
-		RequestLimit int        `json:"request_limit"`
-		ExpiresAt    *time.Time `json:"expires_at"`
-		Remark       string     `json:"remark"`
-		Level        int        `json:"level"`
+		RequestLimit   int        `json:"request_limit"`
+		ExpiresAt      *time.Time `json:"expires_at"`
+		Remark         string     `json:"remark"`
+		Level          int        `json:"level"`
+		HasWeeklyLimit int        `json:"has_weekly_limit"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -108,7 +115,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	if err := h.userService.UpdateUser(userID, req.RequestLimit, req.ExpiresAt, req.Remark, req.Level); err != nil {
+	if err := h.userService.UpdateUser(userID, req.RequestLimit, req.ExpiresAt, req.Remark, req.Level, req.HasWeeklyLimit); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -558,12 +565,13 @@ func (h *AdminHandler) DeleteActivationUser(c *gin.Context) {
 func (h *AdminHandler) BatchCreateActivationUsers(c *gin.Context) {
 	var req struct {
 		Users []struct {
-			Username     string `json:"username" binding:"required"`
-			Password     string `json:"password" binding:"required"`
-			ValidDays    int    `json:"valid_days" binding:"required"`
-			RequestLimit int    `json:"request_limit" binding:"required"`
-			Level        int    `json:"level"`
-			Remarks      string `json:"remarks"`
+			Username       string `json:"username" binding:"required"`
+			Password       string `json:"password" binding:"required"`
+			ValidDays      int    `json:"valid_days" binding:"required"`
+			RequestLimit   int    `json:"request_limit" binding:"required"`
+			Level          int    `json:"level"`
+			HasWeeklyLimit int    `json:"has_weekly_limit"`
+			Remarks        string `json:"remarks"`
 		} `json:"users" binding:"required"`
 	}
 
@@ -578,13 +586,18 @@ func (h *AdminHandler) BatchCreateActivationUsers(c *gin.Context) {
 		if level == 0 {
 			level = 1
 		}
+		hasWeeklyLimit := u.HasWeeklyLimit
+		if hasWeeklyLimit == 0 {
+			hasWeeklyLimit = -1
+		}
 		activationUsers = append(activationUsers, models.ActivationUser{
-			Username:     u.Username,
-			PasswordHash: u.Password, // 会在service中哈希
-			ValidDays:    u.ValidDays,
-			RequestLimit: u.RequestLimit,
-			Level:        level,
-			Remarks:      u.Remarks,
+			Username:       u.Username,
+			PasswordHash:   u.Password, // 会在service中哈希
+			ValidDays:      u.ValidDays,
+			RequestLimit:   u.RequestLimit,
+			Level:          level,
+			HasWeeklyLimit: hasWeeklyLimit,
+			Remarks:        u.Remarks,
 		})
 	}
 

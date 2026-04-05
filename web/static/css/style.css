@@ -781,3 +781,22 @@ main {
             font-weight: bold;
             white-space: nowrap; /* 防止文字换行 */
         }
+
+        /* 可用模型列表 */
+        .models-section .models-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .models-section .model-tag {
+            background: #e0e0e0;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .models-section .model-tag.highspeed {
+            background: #28a745;
+            color: white;
+        }

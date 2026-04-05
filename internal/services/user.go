@@ -18,20 +18,21 @@ func NewUserService() *UserService {
 	return &UserService{}
 }
 
-func (s *UserService) CreateUser(username, password string, requestLimit int, isAdmin bool, expiresAt *time.Time, remark string, level int) (*models.User, error) {
+func (s *UserService) CreateUser(username, password string, requestLimit int, isAdmin bool, expiresAt *time.Time, remark string, level int, hasWeeklyLimit int) (*models.User, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
 	user := &models.User{
-		Username:     username,
-		PasswordHash: string(hash),
-		RequestLimit: requestLimit,
-		IsAdmin:      isAdmin,
-		Level:        level,
-		ExpiresAt:    expiresAt,
-		Remark:       remark,
+		Username:      username,
+		PasswordHash:  string(hash),
+		RequestLimit:  requestLimit,
+		IsAdmin:       isAdmin,
+		Level:         level,
+		ExpiresAt:     expiresAt,
+		Remark:        remark,
+		HasWeeklyLimit: hasWeeklyLimit,
 	}
 
 	if err := database.DB.Create(user).Error; err != nil {
@@ -91,7 +92,7 @@ func (s *UserService) GetAllUsers(page, pageSize int, username string, sort stri
 	return users, total, nil
 }
 
-func (s *UserService) UpdateUser(id int64, requestLimit int, expiresAt *time.Time, remark string, level int) error {
+func (s *UserService) UpdateUser(id int64, requestLimit int, expiresAt *time.Time, remark string, level int, hasWeeklyLimit int) error {
 	// 先获取用户当前的信息
 	user, err := s.GetUserByID(id)
 	if err != nil {
@@ -100,9 +101,10 @@ func (s *UserService) UpdateUser(id int64, requestLimit int, expiresAt *time.Tim
 
 	// 更新用户信息
 	updates := map[string]interface{}{
-		"request_limit": requestLimit,
-		"remark":        remark,
-		"level":         level,
+		"request_limit":     requestLimit,
+		"remark":            remark,
+		"level":             level,
+		"has_weekly_limit": hasWeeklyLimit,
 	}
 	if expiresAt != nil || user.ExpiresAt != nil {
 		updates["expires_at"] = expiresAt
@@ -160,7 +162,7 @@ func (s *UserService) VerifyPassword(username, password string) (*models.User, e
 
 		// 自动创建用户
 		expiresAt := time.Now().AddDate(0, 0, activationUser.ValidDays)
-		newUser, err := s.CreateUser(username, password, activationUser.RequestLimit, false, &expiresAt, activationUser.Remarks, activationUser.Level)
+		newUser, err := s.CreateUser(username, password, activationUser.RequestLimit, false, &expiresAt, activationUser.Remarks, activationUser.Level, activationUser.HasWeeklyLimit)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create user from activation: %w", err)
 		}
@@ -216,7 +218,7 @@ func (s *UserService) InitAdmin() error {
 		return nil
 	}
 
-	_, err := s.CreateUser(adminConfig.Username, adminConfig.Password, 0, true, nil, "", 1)
+	_, err := s.CreateUser(adminConfig.Username, adminConfig.Password, 0, true, nil, "", 1, -1)
 	if err != nil {
 		return fmt.Errorf("failed to create admin: %w", err)
 	}

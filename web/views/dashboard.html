@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>仪表盘 - LLM API</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=2.0.0">
+    <link rel="stylesheet" href="/static/css/style.css?v=3.0.0">
     <style>
         /* 续费面板样式 */
         .renewal-panel {
@@ -109,12 +109,15 @@
 
         <main>
             <section class="stats-section">
-                <h2>baseUrl: http://120.24.86.32:3000</h2>
-                <p><b>注意:</b>记得替换 base_url 比如:【https://api.minimaxi.com/后缀】 >>替换 【http://120.24.86.32:3000/后缀】 </p>
-                <h2 style="color: red;">模型 MiniMax-M2.5 MiniMax-M2.7 都可以用 </h2>
+                <div class="stat-card-full">
+                    <h2>baseUrl: http://120.24.86.32:3000</h2>
+                    <p><b>注意:</b>记得替换 base_url 比如:【https://api.minimaxi.com/后缀】 >>替换 【http://120.24.86.32:3000/后缀】 </p>
+                </div>
             </section>
             <section class="stats-section" id="feedbackSection" style="display: none;">
-                <h2 style="color: red;">好评 额度+100, 30字好评 额度+200 直接闲鱼找我</h2>
+                <div class="stat-card-full">
+                     <h2 style="color: red;">好评 额度+100, 30字好评 额度+200 直接闲鱼找我</h2>
+                </div>
             </section>
 
             <section class="stats-section">
@@ -154,7 +157,7 @@
                 </div>
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <h3>可用次数</h3>
+                        <h3>用量</h3>
                         <p class="stat-value" id="availableRequests">-</p>
                         <!-- HTML 结构 -->
                         <div class="progress-container">
@@ -163,14 +166,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="stat-card">
-                        <h3>已用次数</h3>
-                        <p class="stat-value" id="usedRequests">-</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>总调用次数</h3>
-                        <p class="stat-value" id="totalRequests">-</p>
-                    </div>
+                   
                     <div class="stat-card">
                         <h3>下一次刷新</h3>
                         <p class="stat-value" id="nextTime">-</p>
@@ -185,6 +181,18 @@
                 </div>
                 <div id="apiKeysList" class="apikeys-list">
                     <!-- API Keys will be loaded here -->
+                </div>
+            </section>
+            <section class="models-section">
+                <h2>可用模型</h2>
+                <div class="models-list">
+                    <div class="model-tag">MiniMax-M2</div>
+                    <div class="model-tag">MiniMax-M2.1</div>
+                    <div class="model-tag">MiniMax-M2.5</div>
+                    <div class="model-tag">MiniMax-M2.7</div>
+                    <div class="model-tag highspeed">MiniMax-M2.7-highspeed</div>
+                    <div class="model-tag highspeed">MiniMax-M2.5-highspeed</div>
+                    <div class="model-tag highspeed">MiniMax-M2.1-highspeed</div>
                 </div>
             </section>
 
@@ -240,6 +248,23 @@
             }
         }
 
+        function getNextRefreshWeekTime() {
+            const now = new Date();
+
+            // 当前是星期几（0=周日，1=周一 ...）
+            const day = now.getDay();
+
+            // 距离下一个周一的天数
+            const diff = (8 - day) % 7 || 7;
+
+            const nextMonday = new Date(now);
+            nextMonday.setDate(now.getDate() + diff);
+
+            // 设置为 00:00:00
+            nextMonday.setHours(0, 0, 0, 0);
+
+            return nextMonday;
+        }
 
         /**
          * 获取下一个刷新时间
@@ -335,15 +360,20 @@
                 document.getElementById('expiresAt').textContent = userData.expires_at || '永久有效';
 
                 // Update stats
-                document.getElementById('availableRequests').textContent = usageData.request_limit - usageData.request_used;
-                document.getElementById('usedRequests').textContent = usageData.request_used;
-                document.getElementById('totalRequests').textContent = usageData.total_requests || 0;
+                // document.getElementById('availableRequests').textContent = usageData.request_limit - usageData.request_used;
+                // document.getElementById('usedRequests').textContent = String(request_used) + "/" + String(usageData.request_limit);
+                document.getElementById('availableRequests').textContent =  usageData.request_used + "/" +usageData.request_limit;
+                // document.getElementById('totalRequests').textContent = usageData.total_requests || 0;
                 // document.getElementById('totalTokens').textContent = usageData.total_tokens || 0;
                 // console.log((usageData.request_limit - usageData.request_used)/usageData.request_limit);
 
                 setProgress((usageData.request_limit - usageData.request_used)/usageData.request_limit*100);
 
-                const nextTime = getNextRefreshTime();
+                let nextTime = getNextRefreshTime();
+                if (userData.has_weekly_limit == 1 ) {
+                    nextTime =getNextRefreshWeekTime();
+                }
+                
                 document.getElementById('nextTime').textContent = formatDateTime(nextTime);
 
                 if (userData.request_limit <= 300 && userData.request_count > 0 && userData.remark !== '批量卖出') {
@@ -366,6 +396,16 @@
                 if ( userData.level == 2 && userData.request_limit >= 1000) {
                     document.querySelector('.month-card .price').textContent = '¥ 43.99';
                     document.querySelector('.quarter-card .price').textContent = '¥ 125';
+                }
+                
+                if ( userData.level == 2){
+                    document.querySelectorAll('.models-list .highspeed').forEach(element => {
+                        element.style.display = "block";
+                    });
+                } else {
+                    document.querySelectorAll('.models-list .highspeed').forEach(element => {
+                        element.style.display = "none";
+                    });
                 }
                 
 
