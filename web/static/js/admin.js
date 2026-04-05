@@ -108,7 +108,7 @@ async function loadUsers() {
             var isExpired = u.expires_at && new Date(u.expires_at) < new Date();
             var status = u.expires_at ? (isExpired ? '<span class="status inactive">已过期</span>' : '<span class="status active">正常</span>') : '<span class="status active">永不过期</span>';
             var levelText = u.level === 2 ? '<span class="status active">高速</span>' : '<span class="status">普通</span>';
-            var weeklyLimitText = u.has_weekly_limit === -1 ? '无限制' : (u.has_weekly_limit === 1 ? '有限制' : '-');
+            var weeklyLimitText = u.has_weekly_limit === -1 ? '<span class="status active">无限制</span>' : (u.has_weekly_limit === 1 ? '有限制' : '-');
             html += '<tr><td>' + u.id + '</td><td>' + u.username + '</td><td>' + u.request_limit + '</td><td>' + u.request_count + '</td><td>' + levelText + '</td><td>' + weeklyLimitText + '</td><td>' + (u.expires_at || '-') + '</td><td>' + status + '</td><td>' + (u.remark || '-') + '</td><td>' + u.created_at + '</td><td><button class="btn btn-sm" onclick="editUser(' + u.id + ', ' + u.request_limit + ', \'' + (u.expires_at || '') + '\', \'' + u.username + '\', \'' + (u.remark || '') + '\', ' + (u.level || 1) + ', ' + (u.has_weekly_limit !== undefined ? u.has_weekly_limit : -1) + ')">编辑</button> <button class="btn btn-sm btn-danger" onclick="deleteUser(' + u.id + ')">删除</button></td></tr>';
         });
         html += '</tbody></table></div>';
