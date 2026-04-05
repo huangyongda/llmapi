@@ -397,6 +397,10 @@
                     document.querySelector('.month-card .price').textContent = '¥ 43.99';
                     document.querySelector('.quarter-card .price').textContent = '¥ 125';
                 }
+                if ( userData.has_weekly_limit == 1 && userData.request_limit >= 5000) {
+                    document.querySelector('.month-card .price').textContent = '¥ 29.99';
+                    document.querySelector('.quarter-card .price').textContent = '¥ 85';
+                }
                 
                 if ( userData.level == 2){
                     document.querySelectorAll('.models-list .highspeed').forEach(element => {
