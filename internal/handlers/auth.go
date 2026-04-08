@@ -348,7 +348,7 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 				"error": "超过并发数量 " + now.Format("2006-01-02 15:04:05"),
 			})
 
-			fmt.Printf("用户 %d 请求过快，已达到并发限制 %v \n", apiKey.UserID, now.Format("2006-01-02 15:04:05"))
+			fmt.Println("llmResponse: 用户已达到并发限制 ,userId:", apiKey.UserID, ",time:", now.Format("2006-01-02 15:04:05"))
 			c.Abort()
 			return
 		}
