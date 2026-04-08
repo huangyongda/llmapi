@@ -338,14 +338,17 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
+		now := time.Now()
+		fmt.Println("用户请求内容 ", c.Request.URL.Path, "用户id:", apiKey.UserID, ",", now.Format("2006-01-02 15:04:05"))
 		// ============ 并发限制开始 ============
 		// 尝试获取该用户的并发锁
 		if !tryAcquireUserLock(apiKey.UserID) {
+
 			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error": "超过并发数量",
+				"error": "超过并发数量 " + now.Format("2006-01-02 15:04:05"),
 			})
-			fmt.Printf("用户 %d 请求过快，已达到并发限制\n", apiKey.UserID)
+
+			fmt.Printf("用户 %d 请求过快，已达到并发限制 %v \n", apiKey.UserID, now.Format("2006-01-02 15:04:05"))
 			c.Abort()
 			return
 		}
