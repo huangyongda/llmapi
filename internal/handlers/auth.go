@@ -352,8 +352,27 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		// 确保请求结束时释放锁
-		defer releaseUserLock(apiKey.UserID)
+
+		// 创建一个用于取消超时释放的 channel
+		timeoutCancel := make(chan struct{})
+
+		// 启动60秒超时自动释放锁的 goroutine
+		go func() {
+			select {
+			case <-time.After(60 * time.Second):
+				// 超时后自动释放锁
+				releaseUserLock(apiKey.UserID)
+				fmt.Println("llmResponse: 锁超时自动释放, userId:", apiKey.UserID, ",time:", time.Now().Format("2006-01-02 15:04:05"))
+			case <-timeoutCancel:
+				// 请求正常完成，取消超时释放
+			}
+		}()
+
+		// 确保请求结束时释放锁并取消超时定时器
+		defer func() {
+			close(timeoutCancel)
+			releaseUserLock(apiKey.UserID)
+		}()
 
 		// 检查用户额度
 		userService := services.NewUserService()
