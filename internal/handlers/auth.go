@@ -223,12 +223,12 @@ func getUserConcurrencyLimit() int {
 	hour := time.Now().Hour()
 	minute := time.Now().Minute()
 
-	// 下午15:00-17:30（17:30即17点30分）限制为1个并发
+	// 下午15:00-17:30（17:30即17点30分）限制为2个并发
 	if (hour == 15 && minute >= 0) || (hour >= 16 && hour < 17) || (hour == 17 && minute <= 30) {
-		return 1
+		return 2
 	}
-	// 其他时间段限制为2个并发
-	return 2
+	// 其他时间段限制为5个并发
+	return 5
 }
 
 // tryAcquireUserLock 尝试获取用户并发锁（非阻塞）
