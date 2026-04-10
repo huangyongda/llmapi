@@ -115,7 +115,7 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 		// return
 	}
 	c.Set("post_model", param1.Model)
-	fmt.Println("请求model:", param1.Model)
+	// fmt.Println("请求model:", param1.Model)
 
 	var targetHost string
 
@@ -172,7 +172,7 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 		return
 	}
 	path := c.Request.URL.Path
-	fmt.Println("path URL:", path)
+	// fmt.Println("path URL:", path)
 	if gmlModel && strings.HasPrefix(path, "/anthropic") { // anthropic开头的接口需要添加api/
 		path = "/api" + path
 	}
@@ -183,7 +183,7 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 	targetURL.Path = path
 	targetURL.RawQuery = c.Request.URL.RawQuery
 
-	fmt.Println("Target URL:", targetURL.String())
+	// fmt.Println("Target URL:", targetURL.String())
 
 	defer c.Request.Body.Close()
 
