@@ -151,6 +151,7 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 		if hour >= 14 && hour <= 18 {
 			useNum = "2"
 		}
+		fmt.Println("GLM-5.1和GLM-5-Turbo 14:00–18:00 (UTC+8) 扣除", useNum, "倍")
 		_, _ = userService.CheckAndDecrementLimit(user_id, useNum)
 	}
 
@@ -174,6 +175,9 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 	fmt.Println("path URL:", path)
 	if gmlModel && strings.HasPrefix(path, "/anthropic") { // anthropic开头的接口需要添加api/
 		path = "/api" + path
+	}
+	if gmlModel && strings.HasPrefix(path, "/v1/chat/completions") {
+		path = "/api/coding/paas/v4/chat/completions"
 	}
 
 	targetURL.Path = path
