@@ -32,11 +32,8 @@ func NewProxyHandler() *ProxyHandler {
 type RequestBody struct {
 	Model    string `json:"model"`
 	Messages []struct {
-		Role    string `json:"role"`
-		Content []struct {
-			Type string `json:"type"`
-			Text string `json:"text"`
-		} `json:"content"`
+		Role    string      `json:"role"`
+		Content interface{} `json:"content"` // 支持字符串或数组格式
 	} `json:"messages"`
 }
 
@@ -113,8 +110,9 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 	// 第一次解析
 	var param1 RequestBody
 	if err := json.Unmarshal(requestBody, &param1); err != nil {
-		c.JSON(400, gin.H{"error": "parse json failed"})
-		return
+		fmt.Println("json 无法解析 error", err)
+		// c.JSON(400, gin.H{"error": "parse json failed"})
+		// return
 	}
 	c.Set("post_model", param1.Model)
 	fmt.Println("请求model:", param1.Model)
@@ -140,6 +138,21 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 	}
 
 	c.Set("gmlModel", gmlModel)
+	userService := services.NewUserService()
+
+	UserID, _ := c.Get("user_id")
+
+	user_id, ok := UserID.(int64)
+
+	if gmlModel && ok && (param1.Model == "GLM-5.1" || param1.Model == "GLM-5-Turbo") {
+		//GLM-5.1和GLM-5-Turbo 14:00–18:00 (UTC+8) 扣除2倍 其他时间1倍
+		hour := time.Now().Hour()
+		useNum := "1"
+		if hour >= 14 && hour <= 18 {
+			useNum = "2"
+		}
+		_, _ = userService.CheckAndDecrementLimit(user_id, useNum)
+	}
 
 	target, err := url.Parse(targetHost)
 	if err != nil {

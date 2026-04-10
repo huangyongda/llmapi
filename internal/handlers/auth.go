@@ -386,6 +386,8 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 		//保存用户id到context
 		c.Set("user_id", apiKey.UserID)
 		c.Set("apiKeyId", apiKey.ID)
+		c.Set("UseGml", user.UseGml)
+		c.Set("UseKimi", user.UseKimi)
 
 		if available <= 0 {
 			c.JSON(http.StatusForbidden, gin.H{"error": "Request limit exceeded"})
@@ -394,7 +396,7 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 		}
 
 		// 扣减额度
-		_, err = userService.CheckAndDecrementLimit(apiKey.UserID)
+		_, err = userService.CheckAndDecrementLimit(apiKey.UserID, "1")
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decrement limit"})
 			c.Abort()

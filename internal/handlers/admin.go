@@ -60,13 +60,14 @@ func (h *AdminHandler) GetUsers(c *gin.Context) {
 
 func (h *AdminHandler) CreateUser(c *gin.Context) {
 	var req struct {
-		Username       string     `json:"username" binding:"required"`
-		Password       string     `json:"password" binding:"required"`
-		RequestLimit   int        `json:"request_limit"`
-		ExpiresAt      *time.Time `json:"expires_at"`
-		Remark         string     `json:"remark"`
-		Level          int        `json:"level"`
-		HasWeeklyLimit int        `json:"has_weekly_limit"`
+		Username         string     `json:"username" binding:"required"`
+		Password         string     `json:"password" binding:"required"`
+		RequestLimit     int        `json:"request_limit"`
+		ExpiresAt        *time.Time `json:"expires_at"`
+		Remark           string     `json:"remark"`
+		Level            int        `json:"level"`
+		HasWeeklyLimit   int        `json:"has_weekly_limit"`
+		WeekRequestLimit int        `json:"week_request_limit"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -90,7 +91,12 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 		req.HasWeeklyLimit = -1
 	}
 
-	user, err := h.userService.CreateUser(req.Username, req.Password, req.RequestLimit, false, req.ExpiresAt, req.Remark, req.Level, req.HasWeeklyLimit, -1, -1)
+	// 默认 WeekRequestLimit 为 0（无周限额）
+	if req.WeekRequestLimit == 0 {
+		req.WeekRequestLimit = 0
+	}
+
+	user, err := h.userService.CreateUser(req.Username, req.Password, req.RequestLimit, false, req.ExpiresAt, req.Remark, req.Level, req.HasWeeklyLimit, -1, -1, req.WeekRequestLimit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -107,13 +113,14 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	}
 
 	var req struct {
-		RequestLimit   int        `json:"request_limit"`
-		ExpiresAt      *time.Time `json:"expires_at"`
-		Remark         string     `json:"remark"`
-		Level          int        `json:"level"`
-		UseGml         int        `json:"use_gml"`
-		UseKimi        int        `json:"use_kimi"`
-		HasWeeklyLimit int        `json:"has_weekly_limit"`
+		RequestLimit     int        `json:"request_limit"`
+		ExpiresAt        *time.Time `json:"expires_at"`
+		Remark           string     `json:"remark"`
+		Level            int        `json:"level"`
+		UseGml           int        `json:"use_gml"`
+		UseKimi          int        `json:"use_kimi"`
+		HasWeeklyLimit   int        `json:"has_weekly_limit"`
+		WeekRequestLimit int        `json:"week_request_limit"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -121,7 +128,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	if err := h.userService.UpdateUser(userID, req.RequestLimit, req.ExpiresAt, req.Remark, req.Level, req.HasWeeklyLimit, req.UseGml, req.UseKimi); err != nil {
+	if err := h.userService.UpdateUser(userID, req.RequestLimit, req.ExpiresAt, req.Remark, req.Level, req.HasWeeklyLimit, req.UseGml, req.UseKimi, req.WeekRequestLimit); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -524,15 +531,16 @@ func (h *AdminHandler) GetActivationUsers(c *gin.Context) {
 // CreateActivationUser 创建激活用户
 func (h *AdminHandler) CreateActivationUser(c *gin.Context) {
 	var req struct {
-		Username       string `json:"username" binding:"required"`
-		Password       string `json:"password" binding:"required"`
-		ValidDays      int    `json:"valid_days" binding:"required"`
-		RequestLimit   int    `json:"request_limit" binding:"required"`
-		Level          int    `json:"level"`
-		UseGml         int    `json:"use_gml"`
-		UseKimi        int    `json:"use_kimi"`
-		HasWeeklyLimit int    `json:"has_weekly_limit"`
-		Remarks        string `json:"remarks"`
+		Username         string `json:"username" binding:"required"`
+		Password         string `json:"password" binding:"required"`
+		ValidDays        int    `json:"valid_days" binding:"required"`
+		RequestLimit     int    `json:"request_limit" binding:"required"`
+		Level            int    `json:"level"`
+		UseGml           int    `json:"use_gml"`
+		UseKimi          int    `json:"use_kimi"`
+		HasWeeklyLimit   int    `json:"has_weekly_limit"`
+		WeekRequestLimit int    `json:"week_request_limit"`
+		Remarks          string `json:"remarks"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -556,8 +564,12 @@ func (h *AdminHandler) CreateActivationUser(c *gin.Context) {
 	if req.HasWeeklyLimit == 0 {
 		req.HasWeeklyLimit = -1
 	}
+	// 默认 week_request_limit 为 0
+	if req.WeekRequestLimit == 0 {
+		req.WeekRequestLimit = 0
+	}
 
-	user, err := h.userService.CreateActivationUser(req.Username, req.Password, req.ValidDays, req.RequestLimit, req.Remarks, req.Level, req.UseGml, req.UseKimi, req.HasWeeklyLimit)
+	user, err := h.userService.CreateActivationUser(req.Username, req.Password, req.ValidDays, req.RequestLimit, req.Remarks, req.Level, req.UseGml, req.UseKimi, req.HasWeeklyLimit, req.WeekRequestLimit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -586,15 +598,16 @@ func (h *AdminHandler) DeleteActivationUser(c *gin.Context) {
 func (h *AdminHandler) BatchCreateActivationUsers(c *gin.Context) {
 	var req struct {
 		Users []struct {
-			Username       string `json:"username" binding:"required"`
-			Password       string `json:"password" binding:"required"`
-			ValidDays      int    `json:"valid_days" binding:"required"`
-			RequestLimit   int    `json:"request_limit" binding:"required"`
-			Level          int    `json:"level"`
-			UseGml         int    `json:"use_gml"`
-			UseKimi        int    `json:"use_kimi"`
-			HasWeeklyLimit int    `json:"has_weekly_limit"`
-			Remarks        string `json:"remarks"`
+			Username         string `json:"username" binding:"required"`
+			Password         string `json:"password" binding:"required"`
+			ValidDays        int    `json:"valid_days" binding:"required"`
+			RequestLimit     int    `json:"request_limit" binding:"required"`
+			Level            int    `json:"level"`
+			UseGml           int    `json:"use_gml"`
+			UseKimi          int    `json:"use_kimi"`
+			HasWeeklyLimit   int    `json:"has_weekly_limit"`
+			WeekRequestLimit int    `json:"week_request_limit"`
+			Remarks          string `json:"remarks"`
 		} `json:"users" binding:"required"`
 	}
 
@@ -621,16 +634,21 @@ func (h *AdminHandler) BatchCreateActivationUsers(c *gin.Context) {
 		if hasWeeklyLimit == 0 {
 			hasWeeklyLimit = -1
 		}
+		weekRequestLimit := u.WeekRequestLimit
+		if weekRequestLimit == 0 {
+			weekRequestLimit = 0
+		}
 		activationUsers = append(activationUsers, models.ActivationUser{
-			Username:       u.Username,
-			PasswordHash:   u.Password, // 会在service中哈希
-			ValidDays:      u.ValidDays,
-			RequestLimit:   u.RequestLimit,
-			Level:          level,
-			UseGml:         useGml,
-			UseKimi:        useKimi,
-			HasWeeklyLimit: hasWeeklyLimit,
-			Remarks:        u.Remarks,
+			Username:         u.Username,
+			PasswordHash:     u.Password, // 会在service中哈希
+			ValidDays:        u.ValidDays,
+			RequestLimit:     u.RequestLimit,
+			Level:            level,
+			UseGml:           useGml,
+			UseKimi:          useKimi,
+			HasWeeklyLimit:   hasWeeklyLimit,
+			WeekRequestLimit: weekRequestLimit,
+			Remarks:          u.Remarks,
 		})
 	}
 

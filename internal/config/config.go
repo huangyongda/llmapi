@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"llmapi/tools"
+	"math/rand/v2"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -39,6 +40,7 @@ type LLMConfig struct {
 	APIWeights   []float32         `mapstructure:"api_weights"`
 	APIKeys2     []string          `mapstructure:"api_keys2"`
 	APIWeights2  []float32         `mapstructure:"api_weights2"`
+	GlmAPIKeys   []string          `mapstructure:"glm_api_keys"`
 	Timeout      int               `mapstructure:"timeout"`
 	ProxyURL     string            `mapstructure:"proxy_url"`
 	ModelMapping map[string]string `mapstructure:"model_mapping"`
@@ -96,9 +98,15 @@ func (c *LLMConfig) GetNextAPIKey(con *gin.Context) string {
 	} else {
 		key = tools.Selector2.Select()
 	}
+
 	gmlModel, _ := con.Get("gmlModel")
-	if gmlModel == true {
-		key = "7a0f1a12e31d465e9d11a78ac3044576.2CcXKcTM68ynHIrN"
+	UseGml, _ := con.Get("UseGml")
+	if gmlModel == true && UseGml == 1 {
+		keys := AppConfig.LLM.GlmAPIKeys
+		if len(keys) > 0 {
+			randomIndex := rand.IntN(len(keys))
+			key = keys[randomIndex]
+		}
 	}
 
 	// if len(c.APIKeys) == 0 {

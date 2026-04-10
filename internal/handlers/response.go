@@ -148,8 +148,13 @@ func ResponseLogger() gin.HandlerFunc {
 		if result.BaseResp.StatusCode != 0 && result.Type == "" {
 			fmt.Println("minimax返回错误:", result.BaseResp.StatusMsg, ",userid:", userId, "完整返回:", result)
 		}
+		post_model, _ := c.Get("post_model")
+		post_model_name, ok := post_model.(string)
+		if !ok {
+			post_model_name = "none"
+		}
 		// fmt.Println("json result:", result.Usage)
-		go SaveResponseUsage(userId, apiKeyId, result, result.Model, latencyMs)
+		go SaveResponseUsage(userId, apiKeyId, result, post_model_name, latencyMs)
 
 		curUseApiKey, _ := c.Get("cur_use_api_key")
 		//key后缀（7个字符）
@@ -172,8 +177,30 @@ func ResponseLogger() gin.HandlerFunc {
 		httpStatusCode := c.Writer.Status()
 		retry_num, _ := c.Get("retry_num")
 
-		fmt.Println("retry_num:", retry_num, ",httpStatusCode:", httpStatusCode, ",userId:", userId, ",keySuffix:", keySuffix, ",Time:", time.Now().Format("2006-01-02 15:04:05"), ",Current Usage:", useNum, ",llmResponse:", responseBody)
+		fmt.Println("retry_num:", retry_num, ",httpStatusCode:", httpStatusCode, ",userId:", userId, ",keySuffix:", keySuffix, ",Time:", time.Now().Format("2006-01-02 15:04:05"), ",Current Usage:", useNum, ",llmResponse:", NormalizeLogLine(responseBody))
 	}
+}
+
+// 综合处理函数
+func NormalizeLogLine(log string) string {
+	if log == "" {
+		return ""
+	}
+
+	// 1. 替换所有换行符为空格
+	result := strings.ReplaceAll(log, "\r\n", " ")
+	result = strings.ReplaceAll(result, "\n", " ")
+	result = strings.ReplaceAll(result, "\r", " ")
+
+	// 2. 合并连续的空格
+	for strings.Contains(result, "  ") {
+		result = strings.ReplaceAll(result, "  ", " ")
+	}
+
+	// 3. 去除首尾空格
+	result = strings.TrimSpace(result)
+
+	return result
 }
 
 func SaveResponseUsage(userid, apiKeyId int64, result JsonResponse, model string, latencyMs int) {

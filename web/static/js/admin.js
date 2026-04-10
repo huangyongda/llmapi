@@ -115,7 +115,7 @@ async function loadUsers() {
             return;
         }
 
-        var html = '<div class="table-wrapper"><table><thead><tr><th>ID</th><th>用户名</th><th>额度限制</th><th>已用次数</th><th>等级</th><th>Gml</th><th>Kimi</th><th>周额度限制</th><th>过期时间</th><th>状态</th><th>备注</th><th>创建时间</th><th>操作</th></tr></thead><tbody>';
+        var html = '<div class="table-wrapper"><table><thead><tr><th>ID</th><th>用户名</th><th>额度限制</th><th>已用次数</th><th>周限额度</th><th>周用量</th><th>等级</th><th>Gml</th><th>Kimi</th><th>周额度限制</th><th>过期时间</th><th>状态</th><th>备注</th><th>创建时间</th><th>操作</th></tr></thead><tbody>';
         data.data.forEach(function(u) {
             var isExpired = u.expires_at && new Date(u.expires_at) < new Date();
             var status = u.expires_at ? (isExpired ? '<span class="status inactive">已过期</span>' : '<span class="status active">正常</span>') : '<span class="status active">永不过期</span>';
@@ -123,7 +123,7 @@ async function loadUsers() {
             var weeklyLimitText = u.has_weekly_limit === -1 ? '<span class="status active">无限制</span>' : (u.has_weekly_limit === 1 ? '有限制' : '-');
             var gmlText = u.use_gml === 1 ? '<span class="status active">是</span>' : '<span class="status">否</span>';
             var kimiText = u.use_kimi === 1 ? '<span class="status active">是</span>' : '<span class="status">否</span>';
-            html += '<tr><td>' + u.id + '</td><td>' + u.username + '</td><td>' + u.request_limit + '</td><td>' + u.request_count + '</td><td>' + levelText + '</td><td>' + gmlText + '</td><td>' + kimiText + '</td><td>' + weeklyLimitText + '</td><td>' + (u.expires_at || '-') + '</td><td>' + status + '</td><td>' + (u.remark || '-') + '</td><td>' + u.created_at + '</td><td><button class="btn btn-sm" onclick="editUser(' + u.id + ', ' + u.request_limit + ', \'' + (u.expires_at || '') + '\', \'' + u.username + '\', \'' + (u.remark || '') + '\', ' + (u.level || 1) + ', ' + (u.has_weekly_limit !== undefined ? u.has_weekly_limit : -1) + ', ' + (u.use_gml !== undefined ? u.use_gml : -1) + ', ' + (u.use_kimi !== undefined ? u.use_kimi : -1) + ')">编辑</button> <button class="btn btn-sm btn-danger" onclick="deleteUser(' + u.id + ')">删除</button></td></tr>';
+            html += '<tr><td>' + u.id + '</td><td>' + u.username + '</td><td>' + u.request_limit + '</td><td>' + u.request_count + '</td><td>' + (u.week_request_limit || 0) + '</td><td>' + (u.week_request_count || 0) + '</td><td>' + levelText + '</td><td>' + gmlText + '</td><td>' + kimiText + '</td><td>' + weeklyLimitText + '</td><td>' + (u.expires_at || '-') + '</td><td>' + status + '</td><td>' + (u.remark || '-') + '</td><td>' + u.created_at + '</td><td><button class="btn btn-sm" onclick="editUser(' + u.id + ', ' + u.request_limit + ', \'' + (u.expires_at || '') + '\', \'' + u.username + '\', \'' + (u.remark || '') + '\', ' + (u.level || 1) + ', ' + (u.has_weekly_limit !== undefined ? u.has_weekly_limit : -1) + ', ' + (u.use_gml !== undefined ? u.use_gml : -1) + ', ' + (u.use_kimi !== undefined ? u.use_kimi : -1) + ', ' + (u.week_request_limit !== undefined ? u.week_request_limit : 0) + ')">编辑</button> <button class="btn btn-sm btn-danger" onclick="deleteUser(' + u.id + ')">删除</button></td></tr>';
         });
         html += '</tbody></table></div>';
 
@@ -192,13 +192,13 @@ async function loadActivationUsers() {
             return;
         }
 
-        var html = '<div class="table-wrapper"><table><thead><tr><th>ID</th><th>用户名</th><th>有效天数</th><th>请求限制</th><th>等级</th><th>Gml</th><th>Kimi</th><th>周额度限制</th><th>备注</th><th>创建时间</th><th>操作</th></tr></thead><tbody>';
+        var html = '<div class="table-wrapper"><table><thead><tr><th>ID</th><th>用户名</th><th>有效天数</th><th>请求限制</th><th>周限额度</th><th>等级</th><th>Gml</th><th>Kimi</th><th>周额度限制</th><th>备注</th><th>创建时间</th><th>操作</th></tr></thead><tbody>';
         data.data.forEach(function(u) {
             var levelText = u.level === 2 ? '<span class="status active">高速</span>' : '<span class="status">普通</span>';
             var weeklyLimitText = u.has_weekly_limit === -1 ? '无限制' : (u.has_weekly_limit === 1 ? '有限制' : '-');
             var gmlText = u.use_gml === 1 ? '<span class="status active">是</span>' : '<span class="status">否</span>';
             var kimiText = u.use_kimi === 1 ? '<span class="status active">是</span>' : '<span class="status">否</span>';
-            html += '<tr><td>' + u.id + '</td><td>' + u.username + '</td><td>' + u.valid_days + ' 天</td><td>' + u.request_limit + '</td><td>' + levelText + '</td><td>' + gmlText + '</td><td>' + kimiText + '</td><td>' + weeklyLimitText + '</td><td>' + (u.remarks || '-') + '</td><td>' + u.created_at + '</td><td><button class="btn btn-sm btn-danger" onclick="deleteActivationUser(' + u.id + ')">删除</button></td></tr>';
+            html += '<tr><td>' + u.id + '</td><td>' + u.username + '</td><td>' + u.valid_days + ' 天</td><td>' + u.request_limit + '</td><td>' + (u.week_request_limit || 0) + '</td><td>' + levelText + '</td><td>' + gmlText + '</td><td>' + kimiText + '</td><td>' + weeklyLimitText + '</td><td>' + (u.remarks || '-') + '</td><td>' + u.created_at + '</td><td><button class="btn btn-sm btn-danger" onclick="deleteActivationUser(' + u.id + ')">删除</button></td></tr>';
         });
         html += '</tbody></table></div>';
 
@@ -388,7 +388,8 @@ document.getElementById('createUserForm').addEventListener('submit', async funct
         password: formData.get('password'),
         remark: formData.get('remark'),
         request_limit: parseInt(formData.get('request_limit')),
-        has_weekly_limit: parseInt(formData.get('has_weekly_limit'))
+        has_weekly_limit: parseInt(formData.get('has_weekly_limit')),
+        week_request_limit: parseInt(formData.get('week_request_limit') || 0)
     };
     if (expiresAt) {
         requestBody.expires_at = new Date(expiresAt).toISOString();
@@ -463,6 +464,7 @@ document.getElementById('batchCreateActivationForm').addEventListener('submit', 
     var useGml = parseInt(formData.get('use_gml')) || -1;
     var useKimi = parseInt(formData.get('use_kimi')) || -1;
     var hasWeeklyLimit = parseInt(formData.get('has_weekly_limit')) || -1;
+    var weekRequestLimit = parseInt(formData.get('week_request_limit')) || 0;
     var remarks = formData.get('remarks') || '';
 
     if (count < 1 || count > 100) {
@@ -490,6 +492,7 @@ document.getElementById('batchCreateActivationForm').addEventListener('submit', 
             use_gml: useGml,
             use_kimi: useKimi,
             has_weekly_limit: hasWeeklyLimit,
+            week_request_limit: weekRequestLimit,
             remarks: remarks
         });
     }
@@ -517,11 +520,12 @@ document.getElementById('batchCreateActivationForm').addEventListener('submit', 
 });
 
 // Edit User
-function editUser(id, currentLimit, expiresAt, username, remark, level, weeklyLimit, useGml, useKimi) {
+function editUser(id, currentLimit, expiresAt, username, remark, level, weeklyLimit, useGml, useKimi, weekRequestLimit) {
     level = level || 1;
     weeklyLimit = weeklyLimit !== undefined ? weeklyLimit : -1;
     useGml = useGml !== undefined ? useGml : -1;
     useKimi = useKimi !== undefined ? useKimi : -1;
+    weekRequestLimit = weekRequestLimit !== undefined ? weekRequestLimit : 0;
     document.getElementById('editUserId').value = id;
     document.getElementById('editUsername').value = username;
     document.getElementById('editRequestLimit').value = currentLimit;
@@ -537,6 +541,7 @@ function editUser(id, currentLimit, expiresAt, username, remark, level, weeklyLi
     document.getElementById('editWeeklyLimit').value = weeklyLimit;
     document.getElementById('editUseGml').value = useGml;
     document.getElementById('editUseKimi').value = useKimi;
+    document.getElementById('editWeekRequestLimit').value = weekRequestLimit;
 
     document.getElementById('editUserModal').style.display = 'block';
 }
@@ -549,7 +554,8 @@ document.getElementById('editUserForm').addEventListener('submit', async functio
     var expiresAt = formData.get('expires_at');
     var requestBody = {
         request_limit: parseInt(formData.get('request_limit')),
-        has_weekly_limit: parseInt(formData.get('has_weekly_limit'))
+        has_weekly_limit: parseInt(formData.get('has_weekly_limit')),
+        week_request_limit: parseInt(formData.get('week_request_limit') || 0)
     };
     if (expiresAt) {
         requestBody.expires_at = new Date(expiresAt).toISOString();

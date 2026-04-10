@@ -152,6 +152,10 @@
                     <input type="number" name="has_weekly_limit" value="-1" required>
                 </div>
                 <div class="form-group">
+                    <label>周限额度</label>
+                    <input type="number" name="week_request_limit" value="0">
+                </div>
+                <div class="form-group">
                     <label>过期时间（留空表示永不过期）</label>
                     <input type="datetime-local" name="expires_at">
                 </div>
@@ -202,6 +206,10 @@
                 <div class="form-group">
                     <label>使用Kimi</label>
                     <input type="number" name="use_kimi" id="editUseKimi" value="-1">
+                </div>
+                <div class="form-group">
+                    <label>周限额度</label>
+                    <input type="number" name="week_request_limit" id="editWeekRequestLimit" value="0">
                 </div>
                 <button type="submit" class="btn btn-primary">保存</button>
             </form>
@@ -260,6 +268,10 @@
                 <div class="form-group">
                     <label>周额度限制（-1无限制，1有限制）</label>
                     <input type="number" name="has_weekly_limit" required value="-1">
+                </div>
+                <div class="form-group">
+                    <label>周限额度</label>
+                    <input type="number" name="week_request_limit" value="0">
                 </div>
                 <div class="form-group">
                     <label>账号个数</label>
