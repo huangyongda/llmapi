@@ -120,6 +120,13 @@ func main() {
 	r.GET("/health", proxyHandler.HealthCheck)
 
 	//anthropic
+	zai := r.Group("/api")
+	{
+		zai.Use(authHandler.APIKeyAuth(), handlers.ResponseLogger())
+		zai.Any("*path", proxyHandler.ProxyHandler)
+	}
+
+	//anthropic
 	anthropic := r.Group("/anthropic")
 	{
 		anthropic.Use(authHandler.APIKeyAuth(), handlers.ResponseLogger())

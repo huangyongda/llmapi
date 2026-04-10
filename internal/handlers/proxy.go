@@ -3,6 +3,7 @@ package handlers
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -28,6 +29,17 @@ func NewProxyHandler() *ProxyHandler {
 	}
 }
 
+type RequestBody struct {
+	Model    string `json:"model"`
+	Messages []struct {
+		Role    string `json:"role"`
+		Content []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"content"`
+	} `json:"messages"`
+}
+
 func (h *ProxyHandler) HandleChatCompletions(c *gin.Context) {
 	apiKey, exists := c.Get("api_key")
 	if !exists {
@@ -47,7 +59,65 @@ func (h *ProxyHandler) HandleChatCompletions(c *gin.Context) {
 	h.proxyService.ProxyRequest(c.Writer, c.Request, ak)
 }
 
+// 使用 map 存储白名单，查找性能为 O(1)
+var GmlModels = map[string]struct{}{
+	"GLM-4.6":                    {},
+	"GLM-4.6V-FlashX":            {},
+	"GLM-4.7":                    {},
+	"GLM-Image":                  {},
+	"GLM-5-Turbo":                {},
+	"GLM-5V-Turbo":               {},
+	"GLM-5.1":                    {},
+	"GLM-4.5":                    {},
+	"GLM-4.6V":                   {},
+	"GLM-4.7-Flash":              {},
+	"GLM-4.7-FlashX":             {},
+	"GLM-OCR":                    {},
+	"GLM-5":                      {},
+	"GLM-4-Plus":                 {},
+	"GLM-4.5V":                   {},
+	"GLM-4.6V-Flash":             {},
+	"AutoGLM-Phone-Multilingual": {},
+	"GLM-4.5-Air":                {},
+	"GLM-4.5-AirX":               {},
+	"GLM-4.5-Flash":              {},
+	"GLM-4-32B-0414-128K":        {},
+	"CogView-4-250304":           {},
+	"GLM-ASR-2512":               {},
+	"ViduQ1-text":                {},
+	"Viduq1-Image":               {},
+	"Viduq1-Start-End":           {},
+	"Vidu2-Image":                {},
+	"Vidu2-Start-End":            {},
+	"Vidu2-Reference":            {},
+	"CogVideoX-3":                {},
+}
+
+// IsModelInList 判断目标字符串是否在列表中
+func IsGmlModelInList(model string) bool {
+	// 建议：去除首尾空格/换行，防止隐形字符导致匹配失败
+	model = strings.TrimSpace(model)
+	_, ok := GmlModels[model]
+	return ok
+}
+
 func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
+
+	// ===== 先读取请求体 =====
+	requestBody, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Failed to read request body")
+		return
+	}
+
+	// 第一次解析
+	var param1 RequestBody
+	if err := json.Unmarshal(requestBody, &param1); err != nil {
+		c.JSON(400, gin.H{"error": "parse json failed"})
+		return
+	}
+	c.Set("post_model", param1.Model)
+	fmt.Println("请求model:", param1.Model)
 
 	var targetHost string
 
@@ -63,6 +133,13 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 		c.String(http.StatusBadRequest, "Missing API key header")
 		return
 	}
+	gmlModel := IsGmlModelInList(param1.Model)
+	//
+	if gmlModel {
+		targetHost = "https://open.bigmodel.cn"
+	}
+
+	c.Set("gmlModel", gmlModel)
 
 	target, err := url.Parse(targetHost)
 	if err != nil {
@@ -80,18 +157,17 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
+	path := c.Request.URL.Path
+	fmt.Println("path URL:", path)
+	if gmlModel && strings.HasPrefix(path, "/anthropic") { // anthropic开头的接口需要添加api/
+		path = "/api" + path
+	}
 
-	targetURL.Path = c.Request.URL.Path
+	targetURL.Path = path
 	targetURL.RawQuery = c.Request.URL.RawQuery
 
 	fmt.Println("Target URL:", targetURL.String())
 
-	// ===== 先读取请求体 =====
-	requestBody, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		c.String(http.StatusBadRequest, "Failed to read request body")
-		return
-	}
 	defer c.Request.Body.Close()
 
 	// ===== 重试机制：最多重试3次 =====

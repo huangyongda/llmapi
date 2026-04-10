@@ -96,6 +96,10 @@ func (c *LLMConfig) GetNextAPIKey(con *gin.Context) string {
 	} else {
 		key = tools.Selector2.Select()
 	}
+	gmlModel, _ := con.Get("gmlModel")
+	if gmlModel == true {
+		key = "7a0f1a12e31d465e9d11a78ac3044576.2CcXKcTM68ynHIrN"
+	}
 
 	// if len(c.APIKeys) == 0 {
 	// 	return ""
