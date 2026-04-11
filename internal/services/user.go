@@ -33,7 +33,7 @@ func (s *UserService) CreateUser(username, password string, requestLimit int, is
 		ExpiresAt:        expiresAt,
 		Remark:           remark,
 		HasWeeklyLimit:   hasWeeklyLimit,
-		UseGml:           useGlm,
+		UseGlm:           useGlm,
 		UseKimi:          useKimi,
 		WeekRequestLimit: weekRequestLimit,
 	}
@@ -68,7 +68,7 @@ func (s *UserService) GetUserByUsername(username string) (*models.User, error) {
 	return &user, nil
 }
 
-func (s *UserService) GetAllUsers(page, pageSize int, username string, sort string, level, userID, useGml, useKimi string) ([]models.User, int64, error) {
+func (s *UserService) GetAllUsers(page, pageSize int, username string, sort string, level, userID, useGlm, useKimi string) ([]models.User, int64, error) {
 	var users []models.User
 	var total int64
 
@@ -87,8 +87,8 @@ func (s *UserService) GetAllUsers(page, pageSize int, username string, sort stri
 		query = query.Where("id = ?", userID)
 	}
 	// Gml筛选
-	if useGml != "" {
-		query = query.Where("use_gml = ?", useGml)
+	if useGlm != "" {
+		query = query.Where("use_glm = ?", useGlm)
 	}
 	// Kimi筛选
 	if useKimi != "" {
@@ -111,7 +111,7 @@ func (s *UserService) GetAllUsers(page, pageSize int, username string, sort stri
 	return users, total, nil
 }
 
-func (s *UserService) UpdateUser(id int64, requestLimit int, expiresAt *time.Time, remark string, level int, hasWeeklyLimit int, useGml int, useKimi int, weekRequestLimit int) error {
+func (s *UserService) UpdateUser(id int64, requestLimit int, expiresAt *time.Time, remark string, level int, hasWeeklyLimit int, useGlm int, useKimi int, weekRequestLimit int) error {
 	// 先获取用户当前的信息
 	user, err := s.GetUserByID(id)
 	if err != nil {
@@ -124,7 +124,7 @@ func (s *UserService) UpdateUser(id int64, requestLimit int, expiresAt *time.Tim
 		"remark":             remark,
 		"level":              level,
 		"has_weekly_limit":   hasWeeklyLimit,
-		"use_gml":            useGml,
+		"use_glm":            useGlm,
 		"use_kimi":           useKimi,
 		"week_request_limit": weekRequestLimit,
 	}
@@ -184,7 +184,7 @@ func (s *UserService) VerifyPassword(username, password string) (*models.User, e
 
 		// 自动创建用户
 		expiresAt := time.Now().AddDate(0, 0, activationUser.ValidDays)
-		newUser, err := s.CreateUser(username, password, activationUser.RequestLimit, false, &expiresAt, activationUser.Remarks, activationUser.Level, activationUser.HasWeeklyLimit, activationUser.UseGml, activationUser.UseKimi, activationUser.WeekRequestLimit)
+		newUser, err := s.CreateUser(username, password, activationUser.RequestLimit, false, &expiresAt, activationUser.Remarks, activationUser.Level, activationUser.HasWeeklyLimit, activationUser.UseGlm, activationUser.UseKimi, activationUser.WeekRequestLimit)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create user from activation: %w", err)
 		}
@@ -312,7 +312,7 @@ func (s *UserService) GetAllActivationUsers(page, pageSize int) ([]models.Activa
 }
 
 // CreateActivationUser 创建激活用户
-func (s *UserService) CreateActivationUser(username, password string, validDays, requestLimit int, remarks string, level int, useGml int, useKimi int, hasWeeklyLimit int, weekRequestLimit int) (*models.ActivationUser, error) {
+func (s *UserService) CreateActivationUser(username, password string, validDays, requestLimit int, remarks string, level int, useGlm int, useKimi int, hasWeeklyLimit int, weekRequestLimit int) (*models.ActivationUser, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password: %w", err)
@@ -324,7 +324,7 @@ func (s *UserService) CreateActivationUser(username, password string, validDays,
 		ValidDays:        validDays,
 		RequestLimit:     requestLimit,
 		Level:            level,
-		UseGml:           useGml,
+		UseGlm:           useGlm,
 		UseKimi:          useKimi,
 		HasWeeklyLimit:   hasWeeklyLimit,
 		WeekRequestLimit: weekRequestLimit,

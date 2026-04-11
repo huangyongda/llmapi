@@ -100,8 +100,8 @@ func (c *LLMConfig) GetNextAPIKey(con *gin.Context) string {
 	}
 
 	gmlModel, _ := con.Get("gmlModel")
-	UseGml, _ := con.Get("UseGml")
-	if gmlModel == true && UseGml == 1 {
+	useGlm, _ := con.Get("UseGlm")
+	if gmlModel == true && useGlm == 1 {
 		keys := AppConfig.LLM.GlmAPIKeys
 		if len(keys) > 0 {
 			randomIndex := rand.IntN(len(keys))

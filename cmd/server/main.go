@@ -48,6 +48,27 @@ func InitDynamicWeightedSelector() {
 
 }
 
+func customTimeoutHandler(c *gin.Context) {
+	// 从查询参数获取超时时间，默认400秒
+	timeoutStr := c.DefaultQuery("timeout", "400")
+	var timeout int
+	fmt.Sscanf(timeoutStr, "%d", &timeout)
+
+	if timeout <= 0 {
+		timeout = 400
+	}
+
+	log.Printf("自定义超时接口，将等待 %d 秒", timeout)
+
+	// 模拟长时间处理
+	time.Sleep(time.Duration(timeout) * time.Second)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": fmt.Sprintf("处理完成，耗时%d秒", timeout),
+		"timeout": timeout,
+	})
+}
+
 func main() {
 	// 加载配置
 	if err := config.LoadConfig("configs/config.yaml"); err != nil {
@@ -112,6 +133,9 @@ func main() {
 	r.GET("/admin.html", func(c *gin.Context) {
 		c.HTML(200, "admin.html", nil)
 	})
+
+	// 可自定义超时时间的接口
+	r.GET("/custom-timeout", customTimeoutHandler)
 
 	// 添加中间件
 	r.Use(middleware.CORS())

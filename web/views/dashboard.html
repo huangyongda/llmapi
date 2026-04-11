@@ -160,14 +160,26 @@
                 </div>
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <h3>用量</h3>
+                        <h3 id="availableRequestsTitle">用量</h3>
                         <p class="stat-value" id="availableRequests">-</p>
                         <!-- HTML 结构 -->
                         <div class="progress-container">
                             <div class="progress-bar" id="myProgressBar">
-                                <span class="progress-text" id="progressText">0%</span>
+                                <span class="progress-text"  id="progressText" >0%</span>
                             </div>
                         </div>
+                         <h3 class="stat-value" id="progressText2">剩余0%</h3>
+                    </div>
+                    <div class="stat-card" id="weekUse" style="display: none;">
+                        <h3>周用量</h3>
+                        <p class="stat-value" id="availableRequestsWeek">-</p>
+                        <!-- HTML 结构 -->
+                        <div class="progress-container">
+                            <div class="progress-bar" id="myProgressBarWeek">
+                                <span class="progress-text" id="progressTextWeek">0%</span>
+                            </div>
+                        </div>
+                        <h3 class="stat-value" id="progressText2Week">剩余0%</h3>
                     </div>
                    
                     <div class="stat-card">
@@ -196,6 +208,36 @@
                     <div class="model-tag highspeed">MiniMax-M2.7-highspeed</div>
                     <div class="model-tag highspeed">MiniMax-M2.5-highspeed</div>
                     <div class="model-tag highspeed">MiniMax-M2.1-highspeed</div>
+                    <div class="model-tag glm">GLM-4.6</div>
+                    <div class="model-tag glm">GLM-4.6V-FlashX</div>
+                    <div class="model-tag glm">GLM-4.7</div>
+                    <div class="model-tag glm">GLM-Image</div>
+                    <div class="model-tag glm">GLM-5-Turbo</div>
+                    <div class="model-tag glm">GLM-5V-Turbo</div>
+                    <div class="model-tag glm">GLM-5.1</div>
+                    <div class="model-tag glm">GLM-4.5</div>
+                    <div class="model-tag glm">GLM-4.6V</div>
+                    <div class="model-tag glm">GLM-4.7-Flash</div>
+                    <div class="model-tag glm">GLM-4.7-FlashX</div>
+                    <div class="model-tag glm">GLM-OCR</div>
+                    <div class="model-tag glm">GLM-5</div>
+                    <div class="model-tag glm">GLM-4-Plus</div>
+                    <div class="model-tag glm">GLM-4.5V</div>
+                    <div class="model-tag glm">GLM-4.6V-Flash</div>
+                    <div class="model-tag glm">AutoGLM-Phone-Multilingual</div>
+                    <div class="model-tag glm">GLM-4.5-Air</div>
+                    <div class="model-tag glm">GLM-4.5-AirX</div>
+                    <div class="model-tag glm">GLM-4.5-Flash</div>
+                    <div class="model-tag glm">GLM-4-32B-0414-128K</div>
+                    <div class="model-tag glm">CogView-4-250304</div>
+                    <div class="model-tag glm">GLM-ASR-2512</div>
+                    <div class="model-tag glm">ViduQ1-text</div>
+                    <div class="model-tag glm">Viduq1-Image</div>
+                    <div class="model-tag glm">Viduq1-Start-End</div>
+                    <div class="model-tag glm">Vidu2-Image</div>
+                    <div class="model-tag glm">Vidu2-Start-End</div>
+                    <div class="model-tag glm">Vidu2-Reference</div>
+                    <div class="model-tag glm">CogVideoX-3</div>
                 </div>
             </section>
 
@@ -225,10 +267,13 @@
          * 设置进度条的函数
          * @param {number} percent - 0 到 100 之间的数字
          */
-        function setProgress(percent) {
+        function setProgress(percent,name) {
             // 1. 获取 DOM 元素
-            const bar = document.getElementById('myProgressBar');
-            const text = document.getElementById('progressText');
+            const bar = document.getElementById('myProgressBar'+name);
+            const text = document.getElementById('progressText'+name);
+            const text2 = document.getElementById('progressText2'+name);
+
+            
 
             // 2. 简单的数据校验（防止超出 0-100 范围）
             if (percent < 0) percent = 0;
@@ -239,7 +284,8 @@
             bar.style.width = percent + '%';
 
             // 4. 修改文字内容
-            text.innerText = percent + '%';
+            text.innerText =   percent + '%';
+            text2.innerText = "用量剩余" + percent + '%';
             
             // 5. (可选) 根据进度改变文字颜色，防止蓝色背景看不清白色文字
             // 如果进度条很短，文字可能会跑到灰色背景上，这里简单处理
@@ -365,12 +411,21 @@
                 // Update stats
                 // document.getElementById('availableRequests').textContent = usageData.request_limit - usageData.request_used;
                 // document.getElementById('usedRequests').textContent = String(request_used) + "/" + String(usageData.request_limit);
-                document.getElementById('availableRequests').textContent =  usageData.request_used + "/" +usageData.request_limit;
+                document.getElementById('availableRequests').textContent =  userData.request_count + "/" +userData.request_limit;
                 // document.getElementById('totalRequests').textContent = usageData.total_requests || 0;
                 // document.getElementById('totalTokens').textContent = usageData.total_tokens || 0;
                 // console.log((usageData.request_limit - usageData.request_used)/usageData.request_limit);
 
-                setProgress((usageData.request_limit - usageData.request_used)/usageData.request_limit*100);
+                setProgress((usageData.request_limit - usageData.request_used)/usageData.request_limit*100,"");
+
+                if (userData.week_request_limit > 0 && userData.has_weekly_limit ==1 ) {
+                    document.getElementById('availableRequestsTitle').textContent = "5小时用量"
+                    document.getElementById('weekUse').style.display = 'block';
+                    document.getElementById('availableRequestsWeek').textContent =  userData.week_request_count + "/" +userData.week_request_limit;
+                    setProgress((userData.week_request_limit - userData.week_request_count)/userData.week_request_limit*100,"Week");
+
+                }
+
 
                 let nextTime = getNextRefreshTime();
                 if (userData.has_weekly_limit == 1 ) {
@@ -411,6 +466,15 @@
                     });
                 } else {
                     document.querySelectorAll('.models-list .highspeed').forEach(element => {
+                        element.style.display = "none";
+                    });
+                }
+                if ( userData.use_glm == 1){
+                    document.querySelectorAll('.models-list .glm').forEach(element => {
+                        element.style.display = "block";
+                    });
+                } else {
+                    document.querySelectorAll('.models-list .glm').forEach(element => {
                         element.style.display = "none";
                     });
                 }

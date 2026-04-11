@@ -386,7 +386,7 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 		//保存用户id到context
 		c.Set("user_id", apiKey.UserID)
 		c.Set("apiKeyId", apiKey.ID)
-		c.Set("UseGml", user.UseGml)
+		c.Set("UseGlm", user.UseGlm)
 		c.Set("UseKimi", user.UseKimi)
 
 		if available <= 0 {

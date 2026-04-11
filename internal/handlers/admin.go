@@ -35,11 +35,11 @@ func (h *AdminHandler) GetUsers(c *gin.Context) {
 	username := c.Query("username")
 	level := c.Query("level")
 	userID := c.Query("id")
-	useGml := c.Query("use_gml")
+	useGlm := c.Query("use_glm")
 	useKimi := c.Query("use_kimi")
 	sort := c.DefaultQuery("sort", "id")
 
-	users, total, err := h.userService.GetAllUsers(page, pageSize, username, sort, level, userID, useGml, useKimi)
+	users, total, err := h.userService.GetAllUsers(page, pageSize, username, sort, level, userID, useGlm, useKimi)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -117,7 +117,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		ExpiresAt        *time.Time `json:"expires_at"`
 		Remark           string     `json:"remark"`
 		Level            int        `json:"level"`
-		UseGml           int        `json:"use_gml"`
+		UseGlm           int        `json:"use_glm"`
 		UseKimi          int        `json:"use_kimi"`
 		HasWeeklyLimit   int        `json:"has_weekly_limit"`
 		WeekRequestLimit int        `json:"week_request_limit"`
@@ -128,7 +128,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	if err := h.userService.UpdateUser(userID, req.RequestLimit, req.ExpiresAt, req.Remark, req.Level, req.HasWeeklyLimit, req.UseGml, req.UseKimi, req.WeekRequestLimit); err != nil {
+	if err := h.userService.UpdateUser(userID, req.RequestLimit, req.ExpiresAt, req.Remark, req.Level, req.HasWeeklyLimit, req.UseGlm, req.UseKimi, req.WeekRequestLimit); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -536,7 +536,7 @@ func (h *AdminHandler) CreateActivationUser(c *gin.Context) {
 		ValidDays        int    `json:"valid_days" binding:"required"`
 		RequestLimit     int    `json:"request_limit" binding:"required"`
 		Level            int    `json:"level"`
-		UseGml           int    `json:"use_gml"`
+		UseGlm           int    `json:"use_glm"`
 		UseKimi          int    `json:"use_kimi"`
 		HasWeeklyLimit   int    `json:"has_weekly_limit"`
 		WeekRequestLimit int    `json:"week_request_limit"`
@@ -552,9 +552,9 @@ func (h *AdminHandler) CreateActivationUser(c *gin.Context) {
 	if req.Level == 0 {
 		req.Level = 1
 	}
-	// 默认 use_gml 为 -1
-	if req.UseGml == 0 {
-		req.UseGml = -1
+	// 默认 use_glm 为 -1
+	if req.UseGlm == 0 {
+		req.UseGlm = -1
 	}
 	// 默认 use_kimi 为 -1
 	if req.UseKimi == 0 {
@@ -569,7 +569,7 @@ func (h *AdminHandler) CreateActivationUser(c *gin.Context) {
 		req.WeekRequestLimit = 0
 	}
 
-	user, err := h.userService.CreateActivationUser(req.Username, req.Password, req.ValidDays, req.RequestLimit, req.Remarks, req.Level, req.UseGml, req.UseKimi, req.HasWeeklyLimit, req.WeekRequestLimit)
+	user, err := h.userService.CreateActivationUser(req.Username, req.Password, req.ValidDays, req.RequestLimit, req.Remarks, req.Level, req.UseGlm, req.UseKimi, req.HasWeeklyLimit, req.WeekRequestLimit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -603,7 +603,7 @@ func (h *AdminHandler) BatchCreateActivationUsers(c *gin.Context) {
 			ValidDays        int    `json:"valid_days" binding:"required"`
 			RequestLimit     int    `json:"request_limit" binding:"required"`
 			Level            int    `json:"level"`
-			UseGml           int    `json:"use_gml"`
+			UseGlm           int    `json:"use_glm"`
 			UseKimi          int    `json:"use_kimi"`
 			HasWeeklyLimit   int    `json:"has_weekly_limit"`
 			WeekRequestLimit int    `json:"week_request_limit"`
@@ -622,9 +622,9 @@ func (h *AdminHandler) BatchCreateActivationUsers(c *gin.Context) {
 		if level == 0 {
 			level = 1
 		}
-		useGml := u.UseGml
-		if useGml == 0 {
-			useGml = -1
+		useGlm := u.UseGlm
+		if useGlm == 0 {
+			useGlm = -1
 		}
 		useKimi := u.UseKimi
 		if useKimi == 0 {
@@ -644,7 +644,7 @@ func (h *AdminHandler) BatchCreateActivationUsers(c *gin.Context) {
 			ValidDays:        u.ValidDays,
 			RequestLimit:     u.RequestLimit,
 			Level:            level,
-			UseGml:           useGml,
+			UseGlm:           useGlm,
 			UseKimi:          useKimi,
 			HasWeeklyLimit:   hasWeeklyLimit,
 			WeekRequestLimit: weekRequestLimit,
