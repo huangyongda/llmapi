@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>仪表盘 - LLM API</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=3.0.0">
+    <link rel="stylesheet" href="/static/css/style.css?v=4.0.0">
     <style>
         /* 续费面板样式 */
         .renewal-panel {
@@ -568,12 +568,15 @@
                     <div class="apikey-info">
                         <strong>${key.key_name || 'API Key'}</strong>
                         <code>${key.key_value}</code>
-                        <button class="btn btn-sm btn-copy" onclick="copyKey('${key.key_value}')">复制</button>
                         <span class="status ${key.is_active ? 'active' : 'inactive'}">
                             ${key.is_active ? '激活' : '禁用'}
                         </span>
                     </div>
-                    <button class="btn btn-sm btn-danger" onclick="deleteKey(${key.id})">删除</button>
+                    <div class="apikey-actions">
+                        <button class="btn btn-sm btn-copy" onclick="copyKey('${key.key_value}')" title="复制">复制</button>
+                        <button class="btn btn-sm btn-chat" onclick="openChat('${key.key_value}')" title="聊天">💬</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteKey(${key.id})" title="删除">删除</button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -641,6 +644,20 @@
             } catch (error) {
                 alert('网络错误');
             }
+        }
+
+        // Open chat with API key
+        function openChat(apiKey) {
+            const settings = {
+                keyVaults: {
+                    openai: {
+                        apiKey: apiKey,
+                        baseURL: 'https://api.nengpa.com/v1'
+                    }
+                }
+            };
+            const url = 'https://lobechat784894.zeabur.app/chat?settings=' + encodeURIComponent(JSON.stringify(settings));
+            window.open(url, '_blank');
         }
 
         // Logout

@@ -412,6 +412,28 @@ main section {
     border-radius: 4px;
 }
 
+.apikey-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.apikey-actions .btn {
+    min-width: 50px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+}
+
+.apikey-actions .btn-chat {
+    background: #28a745;
+    color: #fff;
+    border: none;
+}
+
+.apikey-actions .btn-chat:hover {
+    background: #218838;
+}
+
 /* Status */
 .status {
     display: inline-block;
