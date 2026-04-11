@@ -99,7 +99,11 @@ func IsGmlModelInList(model string) bool {
 }
 
 func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
-
+	if c.Request.URL.Path == "/v1/models" {
+		modelsHandlers := NewModelsHandler()
+		modelsHandlers.GetModels(c)
+		return
+	}
 	// ===== 先读取请求体 =====
 	requestBody, err := io.ReadAll(c.Request.Body)
 	if err != nil {
