@@ -3,43 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LLM API - 大语言模型API转发服务</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <title>能爬 API - nengpa.com</title>
+    <script>
+        if (location.host === '120.24.86.32:3000') {
+            location.href = 'https://www.nengpa.com' + location.pathname + location.search;
+        }
+    </script>
+    <!-- <link rel="stylesheet" href="/static/css/style.css"> -->
+    <link rel="stylesheet" href="/static/css/landing.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>LLM API</h1>
-            <p class="tagline">大语言模型API转发服务</p>
+    <div class="landing-container">
+        <header class="landing-header">
+            <a href="/login.html" class="btn btn-primary">登录</a>
         </header>
 
-        <main>
-            <div class="features">
+        <main class="landing-main">
+            <h1>能爬API</h1>
+            <h1>www.nengpa.com</h1>
+            <p class="tagline">专业的AI模型API转发服务</p>
+
+            <div class="features-grid">
                 <div class="feature-card">
                     <h3>API 转发</h3>
                     <p>支持 OpenAI 和 Anthropic 格式的 API 请求</p>
                 </div>
                 <div class="feature-card">
-                    <h3>API Key 管理</h3>
-                    <p>创建和管理多个 API Key</p>
-                </div>
-                <div class="feature-card">
-                    <h3>用量统计</h3>
+                    <h3>用量查看</h3>
                     <p>实时查看 API 调用和用量统计</p>
                 </div>
                 <div class="feature-card">
-                    <h3>访问控制</h3>
-                    <p>灵活的权限管理和额度控制</p>
+                    <h3>API Key</h3>
+                    <p>创建和管理多个 API Key</p>
                 </div>
-            </div>
-
-            <div class="actions">
-                <a href="/login.html" class="btn btn-primary">登录</a>
+                <div class="feature-card">
+                    <h3>在线聊天</h3>
+                    <p>直接在线使用大语言模型聊天</p>
+                </div>
             </div>
         </main>
 
-        <footer>
-            <p>&copy; 2024 LLM API. All rights reserved.</p>
+        <footer class="landing-footer">
+            <p>&copy; 2024 能爬API. All rights reserved.</p>
         </footer>
     </div>
 </body>

@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>仪表盘 - LLM API</title>
+    <title>能爬 API - nengpa.com</title>
+    <script>
+        // 检查是否需要跳转到 HTTPS
+        if (location.host === '120.24.86.32:3000') {
+            location.href = 'https://www.nengpa.com' + location.pathname + location.search;
+        }
+    </script>
     <link rel="stylesheet" href="/static/css/style.css?v=4.0.0">
     <style>
         /* 续费面板样式 */
@@ -97,9 +103,8 @@
     <div class="container">
         <header>
             <nav class="navbar">
-                <h1>LLM API</h1>
+                <h1>能爬 API- nengpa.com</h1>
                 <div class="nav-links">
-                    <a href="/help.html" class="nav-link">使用说明</a>
                     <span id="username"></span>
                     <span id="uid" style="display: none;"></span>
                     <button id="logoutBtn" class="btn btn-sm">退出</button>
@@ -111,10 +116,10 @@
             <section class="stats-section">
                 <div class="stat-card-full">
                     <h2>
-                        <p>baseUrl: <b style="color: rgb(8, 0, 255);">http://120.24.86.32:3000/anthropic</b> 这是anthropic  格式</p>
-                        <p>baseUrl: <b style="color: rgb(8, 0, 255);">http://120.24.86.32:3000/v1</b> 这是openai格式</p>
+                        <p>baseUrl: <b style="color: rgb(8, 0, 255);">https://api.nengpa.com/anthropic</b> 这是anthropic  格式</p>
+                        <p>baseUrl: <b style="color: rgb(8, 0, 255);">https://api.nengpa.com/v1</b> 这是openai格式</p>
                     </h2>
-                    <p><b>注意:</b>记得替换 base_url 比如:【https://api.minimaxi.com/anthropic】 >>替换 【http://120.24.86.32:3000/anthropic】 </p>
+                    <p><b>注意:</b>记得替换 base_url 比如:【https://api.minimaxi.com/anthropic】 >>替换 【https://api.nengpa.com/anthropic】 </p>
                 </div>
             </section>
             <section class="stats-section" id="feedbackSection" style="display: none;">
