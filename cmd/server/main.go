@@ -305,7 +305,7 @@ func executeTask() {
 		return
 	}
 	apiWeights := config.AppConfig.LLM.APIWeights
-	SetWeight(apiKeys, apiWeights)
+	SetWeight(apiKeys, apiWeights, tools.Selector)
 
 	apiKeys2 := config.AppConfig.LLM.APIKeys2
 	if len(apiKeys2) == 0 {
@@ -313,12 +313,12 @@ func executeTask() {
 		return
 	}
 	apiWeights2 := config.AppConfig.LLM.APIWeights2
-	SetWeight(apiKeys2, apiWeights2)
+	SetWeight(apiKeys2, apiWeights2, tools.Selector2)
 
 	// fmt.Println(results)
 }
 
-func SetWeight(apiKeys []string, apiWeights []float32) {
+func SetWeight(apiKeys []string, apiWeights []float32, Selector *tools.DynamicWeightedSelector) {
 	defer func() {
 		if r := recover(); r != nil {
 			stack := debug.Stack()
@@ -360,7 +360,7 @@ func SetWeight(apiKeys []string, apiWeights []float32) {
 		// 检查响应状态
 		if respInfo.BaseResp.StatusCode != 0 {
 			log.Printf("API %s 返回错误：%s", apiKey, respInfo.BaseResp.StatusMsg)
-			tools.Selector.SetWeight(apiKey, 0)
+			Selector.SetWeight(apiKey, 0)
 			fmt.Println(apiKey, "返回错误 :set curWeight ", 0)
 			continue
 		}
@@ -393,7 +393,7 @@ func SetWeight(apiKeys []string, apiWeights []float32) {
 
 		curWeight := int(weight * float32(current_interval_usage_count))
 
-		tools.Selector.SetWeight(apiKey, curWeight)
+		Selector.SetWeight(apiKey, curWeight)
 		fmt.Println(apiKey, ":set curWeight ", curWeight)
 
 		// 添加 key 索引标识
