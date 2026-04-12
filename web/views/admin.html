@@ -242,11 +242,11 @@
 
     <!-- 批量创建待激活用户 Modal -->
     <div id="batchCreateActivationModal" class="modal">
-        <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-content" style="max-width: 650px; max-height: 85vh; overflow-y: auto;">
             <span class="close">&times;</span>
             <h2>批量创建待激活用户</h2>
-            <form id="batchCreateActivationForm">
-                <div class="form-group">
+            <form id="batchCreateActivationForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem;">
+                <div class="form-group" style="grid-column: span 2;">
                     <label>密码</label>
                     <input type="text" name="password" value="qwedcvb" required placeholder="所有用户的统一密码">
                 </div>
@@ -263,30 +263,30 @@
                     <input type="number" name="level" required value="1" min="1">
                 </div>
                 <div class="form-group">
-                    <label>使用GML（1是，-1否，默认-1）</label>
+                    <label>账号个数</label>
+                    <input type="number" name="count" required value="10" min="1" max="100">
+                </div>
+                <div class="form-group">
+                    <label>使用GML（1是，-1否）</label>
                     <input type="number" name="use_glm" required value="-1">
                 </div>
                 <div class="form-group">
-                    <label>使用Kimi（1是，-1否，默认-1）</label>
+                    <label>使用Kimi（1是，-1否）</label>
                     <input type="number" name="use_kimi" required value="-1">
                 </div>
                 <div class="form-group">
-                    <label>周额度限制（-1无限制，1有限制）</label>
+                    <label>周额度限制（-1无限制）</label>
                     <input type="number" name="has_weekly_limit" required value="-1">
                 </div>
                 <div class="form-group">
                     <label>周限额度</label>
                     <input type="number" name="week_request_limit" value="0">
                 </div>
-                <div class="form-group">
-                    <label>账号个数</label>
-                    <input type="number" name="count" required value="10" min="1" max="100">
-                </div>
-                <div class="form-group">
+                <div class="form-group" style="grid-column: span 2;">
                     <label>备注</label>
                     <input type="text" name="remarks" placeholder="可选">
                 </div>
-                <button type="submit" class="btn btn-primary">批量创建</button>
+                <button type="submit" class="btn btn-primary" style="grid-column: span 2;">批量创建</button>
             </form>
         </div>
     </div>
