@@ -17,6 +17,7 @@ import (
 	"llmapi/internal/config"
 	"llmapi/internal/models"
 	"llmapi/internal/services"
+	"llmapi/tools"
 )
 
 type ProxyHandler struct {
@@ -201,6 +202,19 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 	// ===== 替换 API Key =====
 	key := config.AppConfig.LLM.GetNextAPIKey(c)
 	defer config.AppConfig.LLM.ReleaseAPIKey(key)
+	if gmlModel && param1.Model != "" {
+		err := tools.GlmLock.Acquire(key+param1.Model, time.Second*20)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "该模型当前访问量过大，请您稍后再试！！")
+			return
+		}
+	}
+	defer func() {
+		if gmlModel && param1.Model != "" {
+			tools.GlmLock.Release(key + param1.Model)
+		}
+	}()
+
 	for retry := 0; retry < maxRetries; retry++ {
 		// 创建请求（使用读取后的 body）
 		req, err := http.NewRequest(
@@ -302,6 +316,22 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 				continue
 			}
 
+		}
+
+		if strings.Contains(string(respBody), `{"error":{"code":"1305","message":"该模型当前访问量过大，请您稍后再试"}`) {
+			if retry < maxRetries-1 {
+				fmt.Printf("重试  (%d/%d) 返回内容: %s\n", retry+1, maxRetries, string(respBody))
+				time.Sleep(time.Second * 2)
+				continue
+			}
+		}
+		if strings.Contains(string(respBody), `{"error":{"code":"1305","message":"该模型当前访问量过大，请您稍后再试"}`) &&
+			resp.StatusCode == 429 {
+			if retry < maxRetries-1 {
+				fmt.Printf("重试  (%d/%d) 返回内容: %s\n", retry+1, maxRetries, string(respBody))
+				time.Sleep(time.Second * 2)
+				continue
+			}
 		}
 
 		// ===== 响应正常，写入客户端 =====

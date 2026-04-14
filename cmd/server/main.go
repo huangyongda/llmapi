@@ -48,6 +48,16 @@ func InitDynamicWeightedSelector() {
 
 }
 
+func InitGlmLock() {
+	// 创建锁
+	keys := []string{}
+	for i := 0; i < len(config.AppConfig.LLM.GlmAPIKeys); i++ {
+		key := config.AppConfig.LLM.GlmAPIKeys[i]
+		keys = append(keys, key)
+	}
+	tools.GlmLock = tools.NewGlmLock(keys)
+}
+
 func customTimeoutHandler(c *gin.Context) {
 	// 从查询参数获取超时时间，默认400秒
 	timeoutStr := c.DefaultQuery("timeout", "400")
@@ -90,6 +100,7 @@ func main() {
 		log.Printf("Warning: Failed to init admin: %v", err)
 	}
 	InitDynamicWeightedSelector()
+	InitGlmLock()
 
 	// 创建可取消的 context
 	ctx, cancel := context.WithCancel(context.Background())
