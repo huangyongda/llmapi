@@ -9,9 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
-
 	"llmapi/internal/services"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // Session 结构
@@ -273,6 +274,10 @@ func cleanupUserLock(userID int64) {
 // APIKeyAuth API Key认证中间件
 func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		requestID := uuid.New().String()
+
+		// 设置到请求上下文
+		c.Set("RequestID", requestID)
 
 		// fmt.Println("=== Request Headers ===")
 		// for key, values := range c.Request.Header {
@@ -339,7 +344,7 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 			return
 		}
 		now := time.Now()
-		fmt.Println("用户请求内容 ", c.Request.URL.Path, "用户id:", apiKey.UserID, ",", now.Format("2006-01-02 15:04:05"))
+		fmt.Println("用户请求内容 ", c.Request.URL.Path, "用户id:", apiKey.UserID, ",", now.Format("2006-01-02 15:04:05"), ",requestID:", requestID)
 		// ============ 并发限制开始 ============
 		// 尝试获取该用户的并发锁
 		if !tryAcquireUserLock(apiKey.UserID) {
@@ -348,7 +353,7 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 				"error": "超过并发数量 " + now.Format("2006-01-02 15:04:05"),
 			})
 
-			fmt.Println("llmResponse: 用户已达到并发限制 ,userId:", apiKey.UserID, ",time:", now.Format("2006-01-02 15:04:05"))
+			fmt.Println("llmResponse: 用户已达到并发限制 ,userId:", apiKey.UserID, ",time:", now.Format("2006-01-02 15:04:05"), ",requestID:", requestID)
 			c.Abort()
 			return
 		}
@@ -379,6 +384,8 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 		available, user, err := userService.GetAvailableRequests(apiKey.UserID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check user limit"})
+			fmt.Println("llmResponse: 用户额度不足 ,userId:", apiKey.UserID, ",time:", now.Format("2006-01-02 15:04:05"), ",requestID:", requestID)
+
 			c.Abort()
 			return
 		}
@@ -391,6 +398,7 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 
 		if available <= 0 {
 			c.JSON(http.StatusForbidden, gin.H{"error": "Request limit exceeded"})
+			fmt.Println("llmResponse: 用户额度不足 ,userId:", apiKey.UserID, ",time:", now.Format("2006-01-02 15:04:05"), ",requestID:", requestID)
 			c.Abort()
 			return
 		}
@@ -399,6 +407,8 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 		_, err = userService.CheckAndDecrementLimit(apiKey.UserID, "1")
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decrement limit"})
+			fmt.Println("llmResponse: 用户额度不足 ,userId:", apiKey.UserID, ",time:", now.Format("2006-01-02 15:04:05"), ",requestID:", requestID)
+
 			c.Abort()
 			return
 		}

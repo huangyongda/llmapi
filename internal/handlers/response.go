@@ -187,8 +187,9 @@ func ResponseLogger() gin.HandlerFunc {
 		// 获取当前返回的http状态码
 		httpStatusCode := c.Writer.Status()
 		retry_num, _ := c.Get("retry_num")
+		requestID, _ := c.Get("RequestID")
 
-		fmt.Println("retry_num:", retry_num, ",httpStatusCode:", httpStatusCode, ",userId:", userId, ",keySuffix:", keySuffix, ",Time:", time.Now().Format("2006-01-02 15:04:05"), ",Current Usage:", useNum, ",llmResponse:", llmResponse)
+		fmt.Println("requestID:", requestID, ",model:", post_model_name, ",retry_num:", retry_num, ",httpStatusCode:", httpStatusCode, ",userId:", userId, ",keySuffix:", keySuffix, ",Time:", time.Now().Format("2006-01-02 15:04:05"), ",Current Usage:", useNum, ",llmResponse:", llmResponse)
 	}
 }
 

@@ -105,6 +105,8 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 		modelsHandlers.GetModels(c)
 		return
 	}
+	requestID, _ := c.Get("RequestID")
+
 	// ===== 先读取请求体 =====
 	requestBody, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -159,6 +161,8 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 		fmt.Println("GLM-5.1和GLM-5-Turbo 14:00–18:00 (UTC+8) 扣除", useNum, "倍")
 		_, _ = userService.CheckAndDecrementLimit(user_id, useNum)
 	}
+
+	fmt.Println("model:", param1.Model, ",user_id:", user_id, ",requestID:", requestID, ",requestBody:", NormalizeLogLine(string(requestBody)))
 
 	target, err := url.Parse(targetHost)
 	if err != nil {
