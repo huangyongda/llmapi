@@ -9,6 +9,7 @@ import (
 	"io"
 	"llmapi/internal/config"
 	"llmapi/internal/services"
+	"llmapi/tools"
 	"strings"
 	"time"
 
@@ -153,6 +154,16 @@ func ResponseLogger() gin.HandlerFunc {
 		if !ok {
 			post_model_name = "none"
 		}
+		llmResponse := NormalizeLogLine(responseBody)
+		if result.Usage.TotalTokens == 0 {
+			usage := tools.ExtractUsage(llmResponse)
+			if usage.PromptTokens > 0 || usage.OutputTokens > 0 || usage.TotalTokens > 0 {
+				result.Usage.TotalTokens = usage.TotalTokens
+				result.Usage.PromptTokens = usage.PromptTokens
+				result.Usage.CompletionTokens = usage.OutputTokens
+			}
+		}
+
 		// fmt.Println("json result:", result.Usage)
 		go SaveResponseUsage(userId, apiKeyId, result, post_model_name, latencyMs)
 
@@ -177,7 +188,7 @@ func ResponseLogger() gin.HandlerFunc {
 		httpStatusCode := c.Writer.Status()
 		retry_num, _ := c.Get("retry_num")
 
-		fmt.Println("retry_num:", retry_num, ",httpStatusCode:", httpStatusCode, ",userId:", userId, ",keySuffix:", keySuffix, ",Time:", time.Now().Format("2006-01-02 15:04:05"), ",Current Usage:", useNum, ",llmResponse:", NormalizeLogLine(responseBody))
+		fmt.Println("retry_num:", retry_num, ",httpStatusCode:", httpStatusCode, ",userId:", userId, ",keySuffix:", keySuffix, ",Time:", time.Now().Format("2006-01-02 15:04:05"), ",Current Usage:", useNum, ",llmResponse:", llmResponse)
 	}
 }
 
