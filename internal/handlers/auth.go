@@ -403,14 +403,16 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 			return
 		}
 
-		// 扣减额度
-		_, err = userService.CheckAndDecrementLimit(apiKey.UserID, "1")
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decrement limit"})
-			fmt.Println("llmResponse: 用户额度不足 ,userId:", apiKey.UserID, ",time:", now.Format("2006-01-02 15:04:05"), ",requestID:", requestID)
+		if user.UseGlm != 1 {
+			// 扣减额度
+			_, err = userService.CheckAndDecrementLimit(apiKey.UserID, "1")
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decrement limit"})
+				fmt.Println("llmResponse: 用户额度不足 ,userId:", apiKey.UserID, ",time:", now.Format("2006-01-02 15:04:05"), ",requestID:", requestID)
 
-			c.Abort()
-			return
+				c.Abort()
+				return
+			}
 		}
 
 		// 将apiKey信息存入context

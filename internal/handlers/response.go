@@ -10,6 +10,7 @@ import (
 	"llmapi/internal/config"
 	"llmapi/internal/services"
 	"llmapi/tools"
+	"strconv"
 	"strings"
 	"time"
 
@@ -188,8 +189,32 @@ func ResponseLogger() gin.HandlerFunc {
 		httpStatusCode := c.Writer.Status()
 		retry_num, _ := c.Get("retry_num")
 		requestID, _ := c.Get("RequestID")
+		gmlModel := c.GetBool("gmlModel")
+		userService := services.NewUserService()
+		useGlm, _ := c.Get("UseGlm")
 
-		fmt.Println("requestID:", requestID, ",model:", post_model_name, ",retry_num:", retry_num, ",httpStatusCode:", httpStatusCode, ",userId:", userId, ",keySuffix:", keySuffix, ",Time:", time.Now().Format("2006-01-02 15:04:05"), ",Current Usage:", useNum, ",llmResponse:", llmResponse)
+		beilv := 1.0
+		if gmlModel && ok && (post_model_name == "GLM-5.1" || post_model_name == "GLM-5-Turbo") {
+			//GLM-5.1和GLM-5-Turbo 14:00–18:00 (UTC+8) 扣除2倍 其他时间1倍
+			hour := time.Now().Hour()
+			beilv = 2.0
+			if hour >= 14 && hour <= 18 {
+				beilv = 3.0
+			}
+			// fmt.Println("GLM-5.1和GLM-5-Turbo 14:00–18:00 (UTC+8) 扣除", beilv, "倍", time.Now().Format("2006-01-02 15:04:05"))
+		}
+		if gmlModel {
+			beilv = beilv * 1.5
+		}
+
+		if useGlm == 1 && result.Usage.TotalTokens > 0 {
+			tokenUsage := result.Usage.TotalTokens
+			tokenUsage = int(float64(tokenUsage) * beilv)
+			// result.Usage.TotalTokens = tokenUsage
+			_, _ = userService.CheckAndDecrementLimit(userId, strconv.Itoa(tokenUsage))
+		}
+
+		fmt.Println("requestID:", requestID, ",model:", post_model_name, ",retry_num:", retry_num, ",httpStatusCode:", httpStatusCode, ",userId:", userId, ",keySuffix:", keySuffix, ",Time:", time.Now().Format("2006-01-02 15:04:05"), beilv, "倍", ",Current Usage:", useNum, ",llmResponse:", llmResponse)
 	}
 }
 

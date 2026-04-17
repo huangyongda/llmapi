@@ -145,22 +145,10 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 	}
 
 	c.Set("gmlModel", gmlModel)
-	userService := services.NewUserService()
 
 	UserID, _ := c.Get("user_id")
 
-	user_id, ok := UserID.(int64)
-
-	if gmlModel && ok && (param1.Model == "GLM-5.1" || param1.Model == "GLM-5-Turbo") {
-		//GLM-5.1和GLM-5-Turbo 14:00–18:00 (UTC+8) 扣除2倍 其他时间1倍
-		hour := time.Now().Hour()
-		useNum := "5"
-		if hour >= 14 && hour <= 18 {
-			useNum = "15"
-		}
-		fmt.Println("GLM-5.1和GLM-5-Turbo 14:00–18:00 (UTC+8) 扣除", useNum, "倍")
-		_, _ = userService.CheckAndDecrementLimit(user_id, useNum)
-	}
+	user_id, _ := UserID.(int64)
 
 	fmt.Println("model:", param1.Model, ",user_id:", user_id, ",requestID:", requestID, ",requestBody:", NormalizeLogLine(string(requestBody)))
 
