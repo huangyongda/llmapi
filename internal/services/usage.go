@@ -14,7 +14,7 @@ func NewUsageService() *UsageService {
 	return &UsageService{}
 }
 
-func (s *UsageService) CreateUsageLog(apiKeyID, userID int64, model string, promptTokens, completionTokens, totalTokens int, cost float64, latencyMs int) (*models.UsageLog, error) {
+func (s *UsageService) CreateUsageLog(apiKeyID, userID int64, model string, promptTokens, completionTokens, totalTokens int, cost float64, latencyMs int, RequestID string) (*models.UsageLog, error) {
 	usageLog := &models.UsageLog{
 		APIKeyID:         apiKeyID,
 		UserID:           userID,
@@ -24,6 +24,7 @@ func (s *UsageService) CreateUsageLog(apiKeyID, userID int64, model string, prom
 		TotalTokens:      totalTokens,
 		Cost:             cost,
 		LatencyMs:        latencyMs,
+		RequestID:        RequestID,
 	}
 
 	if err := database.DB.Create(usageLog).Error; err != nil {

@@ -69,6 +69,7 @@ func ResponseLogger() gin.HandlerFunc {
 
 		userId := c.GetInt64("user_id")
 		apiKeyId := c.GetInt64("apiKeyId")
+		RequestID := c.GetString("RequestID")
 
 		c.Writer = blw
 
@@ -166,7 +167,7 @@ func ResponseLogger() gin.HandlerFunc {
 		}
 
 		// fmt.Println("json result:", result.Usage)
-		go SaveResponseUsage(userId, apiKeyId, result, post_model_name, latencyMs)
+		go SaveResponseUsage(userId, apiKeyId, result, post_model_name, latencyMs, RequestID)
 
 		curUseApiKey, _ := c.Get("cur_use_api_key")
 		//key后缀（7个字符）
@@ -240,7 +241,7 @@ func NormalizeLogLine(log string) string {
 	return result
 }
 
-func SaveResponseUsage(userid, apiKeyId int64, result JsonResponse, model string, latencyMs int) {
+func SaveResponseUsage(userid, apiKeyId int64, result JsonResponse, model string, latencyMs int, RequestID string) {
 
 	// 计算费用 (简单估算)
 	cost := float64(result.Usage.TotalTokens) * 0.00001
@@ -256,5 +257,6 @@ func SaveResponseUsage(userid, apiKeyId int64, result JsonResponse, model string
 		result.Usage.TotalTokens+result.Usage.InputTokens+result.Usage.OutputTokens,
 		cost,
 		latencyMs,
+		RequestID,
 	)
 }

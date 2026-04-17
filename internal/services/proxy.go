@@ -231,6 +231,7 @@ func (s *ProxyService) HandleResponseUsage(respBody []byte, model string, apiKey
 		usage["total_tokens"],
 		cost,
 		latencyMs,
+		"",
 	)
 }
 
@@ -375,6 +376,7 @@ func (s *ProxyService) HandleSSE(w http.ResponseWriter, r *http.Request, apiKey 
 							usage.TotalTokens,
 							cost,
 							int(time.Since(startTime).Milliseconds()),
+							"",
 						)
 					}()
 				}
