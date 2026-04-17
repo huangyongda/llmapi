@@ -446,6 +446,9 @@
                 if ( userData.remark == '批量卖出') {
                     document.querySelector('.xufei').style.display = 'none';
                 }
+                if (userData.use_glm == 1) {
+                    document.querySelector('.xufei').style.display = 'none';
+                }
                 
 
                 if (userData.request_limit >= 1000) {
