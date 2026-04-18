@@ -150,7 +150,7 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 
 	user_id, _ := UserID.(int64)
 
-	fmt.Println("model:", param1.Model, ",user_id:", user_id, ",requestID:", requestID, ",requestBody:", NormalizeLogLine(string(requestBody)))
+	fmt.Println("model:", param1.Model, ",user_id:", user_id, ",requestID:", requestID)
 
 	target, err := url.Parse(targetHost)
 	if err != nil {
