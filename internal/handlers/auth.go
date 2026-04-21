@@ -133,9 +133,9 @@ func (h *AuthHandler) SendVerificationCode(c *gin.Context) {
 	}
 
 	// 检查邮箱是否已注册
-	existingUser, _ := h.userService.GetUserByUsername(req.Email)
+	existingUser, _ := h.userService.GetUserByEmail(req.Email)
 	if existingUser != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "Email already registered"})
+		c.JSON(http.StatusConflict, gin.H{"error": "邮箱已存在 Email already registered"})
 		return
 	}
 
@@ -280,6 +280,46 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, user.ToResponse())
+}
+
+func (h *AuthHandler) BindEmail(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Not logged in"})
+		return
+	}
+
+	var req struct {
+		Email    string `json:"email" binding:"required,email"`
+		Password string `json:"password" binding:"required,min=6"`
+		Code     string `json:"code" binding:"required,len=6"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	// 验证验证码
+	verificationMu.Lock()
+	verification, ok := verificationCodes[req.Email]
+	if !ok || verification.ExpiredAt.Before(time.Now()) || verification.Code != req.Code {
+		verificationMu.Unlock()
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "验证码错误 Invalid or expired verification code"})
+		return
+	}
+	// 验证后删除验证码
+	delete(verificationCodes, req.Email)
+	verificationMu.Unlock()
+
+	// 更新用户邮箱和第二密码
+	err := h.userService.UpdateUserEmail(userID.(int64), req.Email, req.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to bind email"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Email bound successfully"})
 }
 
 // SessionAuth 基于Token的会话认证中间件

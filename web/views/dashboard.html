@@ -107,6 +107,7 @@
                 <div class="nav-links">
                     <span id="username"></span>
                     <span id="uid" style="display: none;"></span>
+                    <button id="bindEmailBtn" class="btn btn-sm">绑定邮箱</button>
                     <button id="logoutBtn" class="btn btn-sm">退出</button>
                 </div>
             </nav>
@@ -255,6 +256,32 @@
         </main>
     </div>
 
+    <!-- 绑定邮箱 Modal -->
+    <div id="bindEmailModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeBindEmailModal">&times;</span>
+            <h2>绑定邮箱</h2>
+            <form id="bindEmailForm">
+                <div class="form-group">
+                    <label>邮箱</label>
+                    <input type="email" id="bindEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="bindPassword" name="password" required placeholder="设置绑定邮箱的密码">
+                </div>
+                <div class="form-group">
+                    <label>验证码</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="bindCode" name="code" required placeholder="6位验证码" maxlength="6" style="flex: 1;">
+                        <button type="button" id="sendBindCodeBtn" class="btn btn-sm">发送验证码</button>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">确认绑定</button>
+            </form>
+        </div>
+    </div>
+
     <script src="/static/js/app.js"></script>
     
     <script>
@@ -263,8 +290,14 @@
         if (!user) {
             window.location.href = '/login.html';
         }
-
-        document.getElementById('username').textContent = user.username;
+        if ( user.email != "" ){
+            document.getElementById('username').textContent = user.email;
+            document.getElementById('bindEmailBtn').style.display = "none";
+            
+        } else {
+            document.getElementById('username').textContent = user.username;
+        }
+        
         document.getElementById('uid').textContent = user.id;
        
 
@@ -701,6 +734,87 @@
                 //跳转到续费页面或者调用续费接口
                 location.href = `http://120.24.86.32:8080/pay.php?uid=${user.id}&type=${planType[plan]}`;
             });
+        });
+
+        // 绑定邮箱 Modal 控制
+        document.getElementById('bindEmailBtn').addEventListener('click', () => {
+            document.getElementById('bindEmailModal').style.display = 'block';
+        });
+
+        document.getElementById('closeBindEmailModal').addEventListener('click', () => {
+            document.getElementById('bindEmailModal').style.display = 'none';
+        });
+
+        // 发送验证码
+        let sendCodeTimer = null;
+        document.getElementById('sendBindCodeBtn').addEventListener('click', async () => {
+            const email = document.getElementById('bindEmail').value;
+            if (!email) {
+                showToast('请输入邮箱');
+                return;
+            }
+            const btn = document.getElementById('sendBindCodeBtn');
+            btn.disabled = true;
+            let countdown = 60;
+            btn.textContent = `${countdown}s`;
+
+            try {
+                const response = await fetch('/web/auth/send-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                if (response.ok) {
+                    showToast('验证码已发送');
+                    sendCodeTimer = setInterval(() => {
+                        countdown--;
+                        btn.textContent = `${countdown}s`;
+                        if (countdown <= 0) {
+                            clearInterval(sendCodeTimer);
+                            btn.disabled = false;
+                            btn.textContent = '发送验证码';
+                        }
+                    }, 1000);
+                } else {
+                    const data = await response.json();
+                    showToast(data.error || '发送失败');
+                    btn.disabled = false;
+                    btn.textContent = '发送验证码';
+                }
+            } catch (error) {
+                showToast('网络错误');
+                btn.disabled = false;
+                btn.textContent = '发送验证码';
+            }
+        });
+
+        // 提交绑定
+        document.getElementById('bindEmailForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('bindEmail').value;
+            const password = document.getElementById('bindPassword').value;
+            const code = document.getElementById('bindCode').value;
+
+            try {
+                const response = await fetch('/web/user/bind-email', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token') || ''
+                    },
+                    body: JSON.stringify({ email, password, code })
+                });
+
+                if (response.ok) {
+                    showToast('绑定成功');
+                    document.getElementById('bindEmailModal').style.display = 'none';
+                } else {
+                    const data = await response.json();
+                    showToast(data.error || '绑定失败');
+                }
+            } catch (error) {
+                showToast('网络错误');
+            }
         });
     </script>
 </body>

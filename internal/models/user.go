@@ -48,6 +48,7 @@ type UserResponse struct {
 	Remark           string  `json:"remark"`
 	HasWeeklyLimit   int     `json:"has_weekly_limit"`
 	CreatedAt        string  `json:"created_at"`
+	Email            string  `json:"email"`
 }
 
 func (u *User) ToResponse() UserResponse {
@@ -71,6 +72,7 @@ func (u *User) ToResponse() UserResponse {
 		Remark:           u.Remark,
 		HasWeeklyLimit:   u.HasWeeklyLimit,
 		CreatedAt:        u.CreatedAt.Format("2006-01-02 15:04:05"),
+		Email:            u.Email,
 	}
 }
 

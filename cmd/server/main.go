@@ -217,6 +217,7 @@ func main() {
 			user.DELETE("/apikeys/:id", adminHandler.DeleteMyAPIKey)
 			user.GET("/usage", adminHandler.GetMyUsage)
 			user.GET("/me", authHandler.GetCurrentUser)
+			user.PUT("/bind-email", authHandler.BindEmail)
 		}
 	}
 
