@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - 能爬 API - nengpa.com</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=1.0">
+</head>
+<body>
+    <div class="container">
+        <div class="login-box">
+            <h1>注册新账号</h1>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="email">邮箱</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="code">验证码</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="code" name="code" required pattern="\d{6}" maxlength="6" style="flex: 1;">
+                        <button type="button" id="sendCodeBtn" class="btn btn-secondary" style="width: 120px;">发送验证码</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-block">注册</button>
+                </div>
+                <div id="error" class="error"></div>
+            </form>
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="/login.html">已有账号？立即登录</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let countdown = 0;
+        const sendCodeBtn = document.getElementById('sendCodeBtn');
+
+        sendCodeBtn.addEventListener('click', async () => {
+            if (countdown > 0) return;
+
+            const email = document.getElementById('email').value;
+            const errorDiv = document.getElementById('error');
+
+            if (!email) {
+                errorDiv.textContent = '请输入邮箱';
+                return;
+            }
+
+            try {
+                sendCodeBtn.disabled = true;
+                countdown = 60;
+                sendCodeBtn.textContent = countdown + '秒后重试';
+
+                const timer = setInterval(() => {
+                    countdown--;
+                    if (countdown <= 0) {
+                        clearInterval(timer);
+                        sendCodeBtn.disabled = false;
+                        sendCodeBtn.textContent = '发送验证码';
+                    } else {
+                        sendCodeBtn.textContent = countdown + '秒后重试';
+                    }
+                }, 1000);
+
+                const response = await fetch('/web/auth/send-code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    clearInterval(timer);
+                    sendCodeBtn.disabled = false;
+                    sendCodeBtn.textContent = '发送验证码';
+                    errorDiv.textContent = data.error || '发送失败';
+                } else {
+                    errorDiv.textContent = '';
+                    alert('验证码已发送到您的邮箱');
+                }
+            } catch (error) {
+                clearInterval(timer);
+                sendCodeBtn.disabled = false;
+                sendCodeBtn.textContent = '发送验证码';
+                errorDiv.textContent = '网络错误，请稍后重试';
+            }
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const code = document.getElementById('code').value;
+            const errorDiv = document.getElementById('error');
+
+            try {
+                const response = await fetch('/web/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password, code })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    localStorage.setItem('token', data.token);
+                    alert('注册成功');
+                    window.location.href = '/dashboard.html';
+                } else {
+                    errorDiv.textContent = data.error || '注册失败';
+                }
+            } catch (error) {
+                errorDiv.textContent = '网络错误，请稍后重试';
+            }
+        });
+    </script>
+</body>
+</html>

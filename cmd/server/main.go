@@ -48,6 +48,22 @@ func InitDynamicWeightedSelector() {
 
 }
 
+func InitEmail() {
+	// 初始化邮件配置
+	tools.InitEmail(&tools.EmailConfig{
+		Enabled:  true,
+		Host:     config.AppConfig.Email.Host,
+		Port:     config.AppConfig.Email.Port,
+		Username: config.AppConfig.Email.Username,
+		Password: config.AppConfig.Email.Password,
+		From:     config.AppConfig.Email.Username,
+		FromName: config.AppConfig.Email.FromName,
+		UseSSL:   config.AppConfig.Email.UseSSL,
+		Timeout:  config.AppConfig.Email.Timeout,
+	})
+
+}
+
 func InitGlmLock() {
 	// 创建锁
 	keys := []string{}
@@ -101,6 +117,7 @@ func main() {
 	}
 	InitDynamicWeightedSelector()
 	InitGlmLock()
+	InitEmail()
 
 	// 创建可取消的 context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -134,6 +151,9 @@ func main() {
 	})
 	r.GET("/login.html", func(c *gin.Context) {
 		c.HTML(200, "login.html", nil)
+	})
+	r.GET("/register.html", func(c *gin.Context) {
+		c.HTML(200, "register.html", nil)
 	})
 	r.GET("/dashboard.html", func(c *gin.Context) {
 		c.HTML(200, "dashboard.html", nil)
@@ -184,6 +204,8 @@ func main() {
 		auth := web.Group("/auth")
 		{
 			auth.POST("/login", authHandler.Login)
+			auth.POST("/send-code", authHandler.SendVerificationCode)
+			auth.POST("/register", authHandler.Register)
 		}
 
 		// 用户自己的管理路由 (需要登录)

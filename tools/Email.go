@@ -13,16 +13,16 @@ import (
 
 // EmailConfig 邮件配置结构体
 type EmailConfig struct {
-	Enabled  bool   `yaml:"enabled"`
-	Host     string `yaml:"smtp_host"`
-	Port     int    `yaml:"smtp_port"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
-	From     string `yaml:"from"`
-	FromName string `yaml:"from_name"`
-	UseTLS   bool   `yaml:"use_tls"`
-	UseSSL   bool   `yaml:"use_ssl"`
-	Timeout  int    `yaml:"timeout"`
+	Enabled  bool   `mapstructure:"enabled"`
+	Host     string `mapstructure:"smtp_host"`
+	Port     int    `mapstructure:"smtp_port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	From     string `mapstructure:"from"`
+	FromName string `mapstructure:"from_name"`
+	UseTLS   bool   `mapstructure:"use_tls"`
+	UseSSL   bool   `mapstructure:"use_ssl"`
+	Timeout  int    `mapstructure:"timeout"`
 }
 
 // 包级变量（遵循现有模式）
@@ -33,6 +33,7 @@ var (
 
 // InitEmail 初始化邮件配置（在系统启动时调用）
 func InitEmail(config *EmailConfig) {
+	fmt.Printf("%+v\n", config)
 	emailMu.Lock()
 	defer emailMu.Unlock()
 	emailConfig = config

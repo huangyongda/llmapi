@@ -68,6 +68,14 @@ func (s *UserService) GetUserByUsername(username string) (*models.User, error) {
 	return &user, nil
 }
 
+func (s *UserService) GetUserByEmail(email string) (*models.User, error) {
+	var user models.User
+	if err := database.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
+	return &user, nil
+}
+
 func (s *UserService) GetAllUsers(page, pageSize int, username string, sort string, level, userID, useGlm, useKimi string) ([]models.User, int64, error) {
 	var users []models.User
 	var total int64
@@ -136,21 +144,20 @@ func (s *UserService) UpdateUser(id int64, requestLimit int, expiresAt *time.Tim
 		return err
 	}
 
-	// 检查用户过期状态是否改变，同步更新 API Key 状态
-	// 用户过期：expiresAt 不为 nil 且早于当前时间
-	// 用户未过期：expiresAt 为 nil 或晚于当前时间
-	isExpired := expiresAt != nil && expiresAt.Before(time.Now())
+	return nil
+}
 
-	// 如果用户之前的状态和现在的状态不同，才需要同步
-	wasExpired := user.ExpiresAt != nil && user.ExpiresAt.Before(time.Now())
-	if wasExpired != isExpired {
-		apiKeyService := NewAPIKeyService()
-		if err := apiKeyService.SyncAPIKeysStatusByUserID(id, isExpired); err != nil {
-			return err
-		}
+func (s *UserService) UpdateUserEmail(id int64, email string, password string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+	update := map[string]interface{}{
+		"PasswordHash2": string(hash),
+		"email":         email,
 	}
 
-	return nil
+	return database.DB.Model(&models.User{}).Where("id = ?", id).Updates(update).Error
 }
 
 func (s *UserService) DeleteUser(id int64) error {

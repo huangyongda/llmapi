@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"llmapi/internal/services"
+	"llmapi/tools"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -29,7 +30,15 @@ var (
 	sessionsMu      sync.RWMutex
 	userConcurrency = &sync.Map{} // map[int64]chan struct{}，每个用户一个容量为1的信号量
 
+	// 验证码存储
+	verificationCodes = make(map[string]*VerificationCode)
+	verificationMu    sync.Mutex
 )
+
+type VerificationCode struct {
+	Code      string
+	ExpiredAt time.Time
+}
 
 type AuthHandler struct {
 	userService *services.UserService
@@ -110,6 +119,151 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Logout successful"})
+}
+
+// SendVerificationCode 发送邮箱验证码
+func (h *AuthHandler) SendVerificationCode(c *gin.Context) {
+	var req struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid email"})
+		return
+	}
+
+	// 检查邮箱是否已注册
+	existingUser, _ := h.userService.GetUserByUsername(req.Email)
+	if existingUser != nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "Email already registered"})
+		return
+	}
+
+	// 检查发送频率（60秒内只能发送一次）
+	verificationMu.Lock()
+	if existing, ok := verificationCodes[req.Email]; ok {
+		// 如果验证码还没过期，且是有效验证码（不为空），说明60秒内已发送过
+		if existing.Code != "" && time.Now().Before(existing.ExpiredAt.Add(-50*time.Second)) {
+			verificationMu.Unlock()
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Please wait before sending again"})
+			return
+		}
+	}
+	verificationMu.Unlock()
+
+	// 生成6位数字验证码
+	code := ""
+	{
+		var codeInt int
+		randBytes := make([]byte, 4)
+		rand.Read(randBytes)
+		codeInt = int(randBytes[0])<<24 | int(randBytes[1])<<16 | int(randBytes[2])<<8 | int(randBytes[3])
+		code = fmt.Sprintf("%06d", codeInt%1000000)
+	}
+
+	// 存储验证码（5分钟有效期）
+	verificationMu.Lock()
+	verificationCodes[req.Email] = &VerificationCode{
+		Code:      code,
+		ExpiredAt: time.Now().Add(5 * time.Minute),
+	}
+	verificationMu.Unlock()
+
+	// 发送邮件
+	subject := "邮箱验证码"
+	body := fmt.Sprintf("您的验证码是：%s，5分钟内有效。请勿泄露给他人。", code)
+	err := tools.Email(req.Email, subject, body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send email"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Verification code sent"})
+}
+
+// Register 用户注册
+func (h *AuthHandler) Register(c *gin.Context) {
+	var req struct {
+		Email    string `json:"email" binding:"required,email"`
+		Password string `json:"password" binding:"required,min=6"`
+		Code     string `json:"code" binding:"required,len=6"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	// 验证验证码
+	verificationMu.Lock()
+	verification, ok := verificationCodes[req.Email]
+	if !ok || verification.ExpiredAt.Before(time.Now()) || verification.Code != req.Code {
+		verificationMu.Unlock()
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired verification code"})
+		return
+	}
+	// 验证后删除验证码
+	delete(verificationCodes, req.Email)
+	verificationMu.Unlock()
+
+	// 检查邮箱是否已注册
+	existingUser, _ := h.userService.GetUserByEmail(req.Email)
+	if existingUser != nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "Email already registered"})
+		return
+	}
+
+	// 计算当天过期时间
+	now := time.Now()
+	todayEnd := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+	// 创建用户
+	username := strings.Split(req.Email, "@")[0]
+	if username == "" {
+		username = req.Email
+	}
+
+	user, err := h.userService.CreateUser(
+		req.Email,
+		req.Password,
+		300,   // RequestLimit = 300
+		false, // isAdmin
+		&todayEnd,
+		"",
+		1,  // level = 1
+		-1, // hasWeeklyLimit = -1
+		-1, // useGlm = -1
+		-1, // useKimi = -1
+		0,  // weekRequestLimit = 0
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		return
+	}
+	h.userService.UpdateUserEmail(user.ID, req.Email, req.Password)
+
+	// 自动登录
+	token, err := generateToken()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	sessionsMu.Lock()
+	sessions[token] = &Session{
+		UserID:    user.ID,
+		Username:  user.Username,
+		IsAdmin:   user.IsAdmin,
+		Token:     token,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	}
+	sessionsMu.Unlock()
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Registration successful",
+		"token":   token,
+		"user":    user.ToResponse(),
+	})
 }
 
 func (h *AuthHandler) GetCurrentUser(c *gin.Context) {

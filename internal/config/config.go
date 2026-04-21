@@ -11,10 +11,11 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	Database DatabaseConfig `mapstructure:"database"`
-	LLM      LLMConfig      `mapstructure:"llm"`
-	Admin    AdminConfig    `mapstructure:"admin"`
+	Server   ServerConfig      `mapstructure:"server"`
+	Database DatabaseConfig    `mapstructure:"database"`
+	LLM      LLMConfig         `mapstructure:"llm"`
+	Admin    AdminConfig       `mapstructure:"admin"`
+	Email    tools.EmailConfig `mapstructure:"email"`
 }
 
 type ServerConfig struct {
