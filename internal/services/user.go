@@ -179,7 +179,7 @@ func (s *UserService) VerifyPassword(username, password string) (*models.User, e
 	user, err := s.GetUserByUsername(username)
 	if err != nil {
 		user, err = s.GetUserByEmail(username)
-		if user.ID > 0 {
+		if user != nil && user.ID > 0 {
 			if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash2), []byte(password)); err != nil {
 				return nil, errors.New("密码错误")
 			}
