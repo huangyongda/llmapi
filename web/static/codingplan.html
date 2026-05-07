@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订阅套餐 - 超值之选</title>
+    <style>
+        :root {
+            --bg-primary: #080b14;
+            --bg-secondary: #0d111f;
+            --bg-card: #111827;
+            --bg-card-hover: #161e30;
+            --border-color: #1e2a40;
+            --border-accent: #4f3a8c;
+            --text-primary: #e8eaf0;
+            --text-secondary: #b0b8c8;
+            --text-muted: #7b8496;
+            --accent-purple: #8b5cf6;
+            --accent-purple-light: #a78bfa;
+            --accent-purple-dark: #6d3fd4;
+            --accent-gold: #f0b90b;
+            --accent-gold-dark: #c7940a;
+            --accent-blue: #5b9cf5;
+            --gradient-speed: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #4f46e5 100%);
+            --gradient-speed-border: linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #6366f1 100%);
+            --gradient-ultra: linear-gradient(135deg, #f0b90b 0%, #e8a40c 30%, #d4780f 60%, #c0561a 100%);
+            --gradient-ultra-border: linear-gradient(135deg, #f5c842 0%, #e8a40c 40%, #d4780f 70%, #c0561a 100%);
+            --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 4px rgba(0, 0, 0, 0.3);
+            --shadow-card-hover: 0 12px 40px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+            --shadow-speed: 0 4px 28px rgba(139, 92, 246, 0.25), 0 0 0 1px rgba(139, 92, 246, 0.2);
+            --shadow-ultra: 0 4px 32px rgba(240, 185, 11, 0.22), 0 0 0 1px rgba(240, 185, 11, 0.18);
+            --radius-card: 16px;
+            --radius-btn: 10px;
+            --radius-tag: 20px;
+            --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-smooth: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            letter-spacing: 0.01em;
+            background-image:
+                radial-gradient(ellipse at 30% 15%, rgba(139, 92, 246, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 25%, rgba(99, 102, 241, 0.05) 0%, transparent 55%),
+                radial-gradient(ellipse at 50% 60%, rgba(240, 185, 11, 0.03) 0%, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        /* ── 主容器 ── */
+        .page-wrapper {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem 4rem;
+        }
+
+        /* ── 页面头部 ── */
+        .page-header {
+            text-align: center;
+            margin-bottom: 3.5rem;
+        }
+        .page-header .badge-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(139, 92, 246, 0.12);
+            border: 1px solid rgba(139, 92, 246, 0.28);
+            border-radius: 24px;
+            padding: 0.4rem 1.2rem;
+            margin-bottom: 1.2rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent-purple-light);
+            letter-spacing: 0.04em;
+        }
+        .page-header .badge-row .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent-purple-light);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.6);
+            }
+            50% {
+                opacity: 0.5;
+                box-shadow: 0 0 0 10px rgba(167, 139, 250, 0);
+            }
+        }
+        .page-header h1 {
+            font-size: 2.6rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #f1f3f9;
+            margin-bottom: 0.5rem;
+        }
+        .page-header h1 .highlight {
+            background: var(--gradient-speed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+        }
+        .page-header .subtitle {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        /* ── Section 标签 ── */
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.4rem;
+            padding-left: 0.25rem;
+        }
+        .section-label .icon-wrapper {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        .section-label.speed .icon-wrapper {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent-purple-light);
+        }
+        .section-label.standard .icon-wrapper {
+            background: rgba(91, 156, 245, 0.15);
+            color: var(--accent-blue);
+        }
+        .section-label .label-text {
+            font-weight: 700;
+            font-size: 1.15rem;
+            letter-spacing: 0.02em;
+            color: #d8dce6;
+        }
+        .section-label .label-badge {
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 0.25rem 0.7rem;
+            border-radius: 14px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .section-label.speed .label-badge {
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            color: #fff;
+            animation: shimmer-badge 3s ease-in-out infinite;
+            background-size: 200% 200%;
+        }
+        @keyframes shimmer-badge {
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        /* ── 卡片网格 ── */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+            margin-bottom: 3rem;
+        }
+        .cards-grid.standard-tier {
+            margin-bottom: 0;
+        }
+
+        /* ── 卡片 ── */
+        .card {
+            position: relative;
+            background: var(--bg-card);
+            border-radius: var(--radius-card);
+            padding: 1.6rem 1.4rem 1.5rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-card);
+            transition: all var(--transition-smooth);
+            display: flex;
+            flex-direction: column;
+            cursor: default;
+            overflow: hidden;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 3px 3px 0 0;
+            opacity: 0;
+            transition: opacity var(--transition-smooth);
+        }
+        .card:hover {
+            background: var(--bg-card-hover);
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-4px);
+            border-color: #2a3450;
+        }
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        /* 极速版卡片 */
+        .card.speed-tier {
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: var(--shadow-speed);
+        }
+        .card.speed-tier::before {
+            background: var(--gradient-speed-border);
+            opacity: 0.85;
+        }
+        .card.speed-tier:hover {
+            border-color: rgba(139, 92, 246, 0.55);
+            box-shadow: 0 14px 44px rgba(139, 92, 246, 0.3), 0 0 0 1px rgba(139, 92, 246, 0.25);
+        }
+        .card.speed-tier.ultra {
+            border-color: rgba(240, 185, 11, 0.3);
+            box-shadow: var(--shadow-ultra);
+        }
+        .card.speed-tier.ultra::before {
+            background: var(--gradient-ultra-border);
+            opacity: 0.85;
+        }
+        .card.speed-tier.ultra:hover {
+            border-color: rgba(240, 185, 11, 0.5);
+            box-shadow: 0 14px 44px rgba(240, 185, 11, 0.28), 0 0 0 1px rgba(240, 185, 11, 0.2);
+        }
+        .card.standard-tier::before {
+            background: #3b4870;
+            opacity: 0.5;
+        }
+        .card.standard-tier:hover::before {
+            opacity: 0.9;
+        }
+        .card.standard-tier:hover {
+            border-color: #3b4870;
+        }
+
+        /* 超值之选角标 */
+        .top-badge {
+            position: absolute;
+            top: -1px;
+            right: 1.2rem;
+            background: var(--gradient-speed);
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.35rem 0.9rem;
+            border-radius: 0 0 10px 10px;
+            letter-spacing: 0.06em;
+            z-index: 2;
+            box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+            white-space: nowrap;
+        }
+        .card.speed-tier.ultra .top-badge {
+            background: var(--gradient-ultra);
+            box-shadow: 0 4px 14px rgba(240, 185, 11, 0.35);
+            color: #1a1000;
+        }
+
+        /* 卡片内容 */
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            margin-bottom: 0.15rem;
+            color: #e2e6f0;
+            position: relative;
+            z-index: 1;
+        }
+        .card-subtitle {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
+        }
+        .card-price {
+            font-size: 2.8rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: #f5f6fa;
+            line-height: 1;
+            margin-bottom: 0.2rem;
+            position: relative;
+            z-index: 1;
+        }
+        .card-price .currency {
+            font-size: 1.4rem;
+            font-weight: 600;
+            vertical-align: super;
+            margin-right: 0.05rem;
+        }
+        .card-billing {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-bottom: 1.2rem;
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 按钮 */
+        .btn-subscribe {
+            display: block;
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border-radius: var(--radius-btn);
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            cursor: pointer;
+            text-align: center;
+            border: none;
+            transition: all var(--transition-fast);
+            position: relative;
+            z-index: 1;
+            text-decoration: none;
+            color: #fff;
+            margin-bottom: 1.3rem;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .btn-subscribe.speed-btn {
+            background: var(--gradient-speed);
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35);
+        }
+        .btn-subscribe.speed-btn:hover {
+            box-shadow: 0 6px 24px rgba(139, 92, 246, 0.5);
+            transform: translateY(-1px);
+        }
+        .btn-subscribe.speed-btn:active {
+            transform: scale(0.97);
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+        }
+        .btn-subscribe.ultra-btn {
+            background: var(--gradient-ultra);
+            box-shadow: 0 4px 16px rgba(240, 185, 11, 0.3);
+            color: #1a0f00;
+        }
+        .btn-subscribe.ultra-btn:hover {
+            box-shadow: 0 6px 24px rgba(240, 185, 11, 0.45);
+            transform: translateY(-1px);
+        }
+        .btn-subscribe.ultra-btn:active {
+            transform: scale(0.97);
+            box-shadow: 0 2px 8px rgba(240, 185, 11, 0.25);
+        }
+        .btn-subscribe.standard-btn {
+            background: transparent;
+            border: 2px solid #4a5578;
+            color: #d0d6e4;
+            box-shadow: none;
+        }
+        .btn-subscribe.standard-btn:hover {
+            border-color: #6b7aab;
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(107, 122, 171, 0.2);
+        }
+        .btn-subscribe.standard-btn:active {
+            transform: scale(0.97);
+            border-color: #8b9ac7;
+        }
+
+        /* 调用次数高亮 */
+        .usage-highlight {
+            background: rgba(139, 92, 246, 0.08);
+            border-left: 2.5px solid var(--accent-purple);
+            padding: 0.45rem 0.8rem;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 0.9rem;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #c8d0e0;
+            position: relative;
+            z-index: 1;
+            letter-spacing: 0.01em;
+        }
+        .card.speed-tier.ultra .usage-highlight {
+            background: rgba(240, 185, 11, 0.07);
+            border-left-color: #e8a40c;
+        }
+        .card.standard-tier .usage-highlight {
+            background: rgba(91, 156, 245, 0.06);
+            border-left-color: var(--accent-blue);
+        }
+
+        /* 模型提示 */
+        .model-hint {
+            font-size: 0.7rem;
+            color: #9a8fc0;
+            background: rgba(139, 92, 246, 0.06);
+            border-radius: 6px;
+            padding: 0.4rem 0.65rem;
+            margin-bottom: 0.85rem;
+            font-family: var(--font-mono);
+            letter-spacing: 0.01em;
+            position: relative;
+            z-index: 1;
+            word-break: break-all;
+            line-height: 1.4;
+        }
+        .card.speed-tier.ultra .model-hint {
+            color: #c0a860;
+            background: rgba(240, 185, 11, 0.05);
+        }
+
+        /* 特性列表 */
+        .features-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            position: relative;
+            z-index: 1;
+            flex-grow: 1;
+        }
+        .features-list li {
+            font-size: 0.8rem;
+            color: #b8c0d2;
+            padding: 0.35rem 0;
+            padding-left: 1.3rem;
+            position: relative;
+            line-height: 1.45;
+            letter-spacing: 0.01em;
+        }
+        .features-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            top: 0.35rem;
+            font-weight: 700;
+            font-size: 0.7rem;
+            color: #6fb87f;
+        }
+        .card.speed-tier .features-list li::before {
+            color: #a78bfa;
+        }
+        .card.speed-tier.ultra .features-list li::before {
+            color: #e8a40c;
+        }
+        .card.standard-tier .features-list li::before {
+            color: #5b9cf5;
+        }
+        .features-list li.feature-highlight {
+            font-weight: 600;
+            color: #d8dde8;
+        }
+
+        /* ── 分隔线 ── */
+        .section-divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 2.5rem 0 2rem;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        .section-divider::before,
+        .section-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+        .section-divider span {
+            opacity: 0.6;
+        }
+
+        /* ── 响应式设计 ── */
+
+        /* 平板：两列 */
+        @media (max-width: 1024px) {
+            .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+            .card {
+                padding: 1.4rem 1.2rem 1.3rem;
+            }
+            .card-price {
+                font-size: 2.4rem;
+            }
+            .page-header h1 {
+                font-size: 2.2rem;
+            }
+        }
+
+        /* 手机端：单列为主，紧凑布局 */
+        @media (max-width: 768px) {
+            html {
+                font-size: 15px;
+            }
+            .page-wrapper {
+                padding: 1.8rem 0.9rem 2.5rem;
+            }
+            .page-header {
+                margin-bottom: 2rem;
+            }
+            .page-header h1 {
+                font-size: 1.7rem;
+            }
+            .page-header .subtitle {
+                font-size: 0.9rem;
+            }
+            .page-header .badge-row {
+                font-size: 0.75rem;
+                padding: 0.3rem 0.9rem;
+            }
+
+            /* 极速版保持两列（小卡片），普通版也两列 */
+            .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.7rem;
+                margin-bottom: 1.8rem;
+            }
+            .cards-grid.standard-tier {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.7rem;
+            }
+
+            .card {
+                padding: 1rem 0.8rem 1rem;
+                border-radius: 12px;
+            }
+            .card-title {
+                font-size: 0.95rem;
+            }
+            .card-subtitle {
+                font-size: 0.68rem;
+                margin-bottom: 0.6rem;
+            }
+            .card-price {
+                font-size: 1.8rem;
+            }
+            .card-price .currency {
+                font-size: 1rem;
+            }
+            .card-billing {
+                font-size: 0.68rem;
+                margin-bottom: 0.8rem;
+            }
+            .btn-subscribe {
+                font-size: 0.8rem;
+                padding: 0.55rem 0.6rem;
+                border-radius: 8px;
+                margin-bottom: 0.9rem;
+            }
+            .usage-highlight {
+                font-size: 0.7rem;
+                padding: 0.3rem 0.55rem;
+                margin-bottom: 0.6rem;
+            }
+            .model-hint {
+                font-size: 0.62rem;
+                padding: 0.3rem 0.45rem;
+                margin-bottom: 0.6rem;
+                border-radius: 4px;
+            }
+            .features-list li {
+                font-size: 0.68rem;
+                padding: 0.25rem 0;
+                padding-left: 1rem;
+            }
+            .features-list li::before {
+                font-size: 0.6rem;
+                top: 0.28rem;
+            }
+            .top-badge {
+                font-size: 0.6rem;
+                padding: 0.25rem 0.6rem;
+                right: 0.6rem;
+                border-radius: 0 0 7px 7px;
+            }
+            .section-label {
+                margin-bottom: 0.9rem;
+                gap: 0.4rem;
+            }
+            .section-label .label-text {
+                font-size: 0.95rem;
+            }
+            .section-label .label-badge {
+                font-size: 0.62rem;
+                padding: 0.2rem 0.5rem;
+            }
+            .section-label .icon-wrapper {
+                width: 26px;
+                height: 26px;
+                border-radius: 7px;
+                font-size: 0.9rem;
+            }
+            .section-divider {
+                margin: 1.6rem 0 1.2rem;
+                font-size: 0.65rem;
+                gap: 0.5rem;
+            }
+        }
+
+        /* 特小屏幕（<400px）：极速版第一张卡片全宽突出，其余两列 */
+        @media (max-width: 420px) {
+            .cards-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.5rem;
+            }
+            .card {
+                padding: 0.85rem 0.65rem 0.85rem;
+                border-radius: 10px;
+            }
+            .card-title {
+                font-size: 0.85rem;
+            }
+            .card-price {
+                font-size: 1.5rem;
+            }
+            .card-price .currency {
+                font-size: 0.85rem;
+            }
+            .btn-subscribe {
+                font-size: 0.72rem;
+                padding: 0.5rem 0.4rem;
+                border-radius: 7px;
+            }
+            .features-list li {
+                font-size: 0.64rem;
+                padding-left: 0.85rem;
+            }
+            .top-badge {
+                font-size: 0.55rem;
+                padding: 0.2rem 0.5rem;
+                right: 0.3rem;
+            }
+            .model-hint {
+                font-size: 0.58rem;
+            }
+            .usage-highlight {
+                font-size: 0.65rem;
+            }
+        }
+
+        /* ── 焦点可见 ── */
+        .btn-subscribe:focus-visible {
+            outline: 3px solid rgba(167, 139, 250, 0.7);
+            outline-offset: 3px;
+        }
+        .card:focus-within {
+            border-color: rgba(167, 139, 250, 0.5);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.08);
+        }
+
+        /* ── 打印样式 ── */
+        @media print {
+            body {
+                background: #fff;
+                color: #000;
+            }
+            .card {
+                box-shadow: none;
+                border: 1px solid #ccc;
+                break-inside: avoid;
+            }
+            .btn-subscribe {
+                background: #ddd !important;
+                color: #000 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="page-wrapper">
+
+        <!-- ========== 页面头部 ========== -->
+        <header class="page-header">
+            <div class="badge-row">
+                <span class="dot"></span> 限时特惠 · 价格直降
+                <span class="dot"></span>
+            </div>
+            <h1>选择适合您的<span class="highlight">订阅套餐</span></h1>
+            <p class="subtitle">全部套餐价格仅为原来的 <strong>1/2</strong>，功能不打折</p>
+        </header>
+
+        <!-- ========== 极速版套餐 ========== -->
+        <div class="section-label speed">
+            <div class="icon-wrapper">⚡</div>
+            <span class="label-text">极速版系列</span>
+            <span class="label-badge">超值之选</span>
+        </div>
+
+        <div class="cards-grid">
+            <!-- Plus-极速版 -->
+            <article class="card speed-tier">
+                <span class="top-badge">超值之选</span>
+                <h3 class="card-title">Plus-极速版</h3>
+                <p class="card-subtitle">极速畅用</p>
+                <div class="card-price"><span class="currency">¥</span>49</div>
+                <p class="card-billing">每月，按月订阅</p>
+                <button class="btn-subscribe speed-btn" aria-label="订阅 Plus-极速版">立即订阅</button>
+                <div class="usage-highlight">1500次模型调用/5小时</div>
+                <div class="model-hint">提示：请将模型切换为 MiniMax-M2.7-highspeed</div>
+                <ul class="features-list">
+                    <li>支持最新 MiniMax-M2.7-highspeed，约100TPS 极速推理</li>
+                    <li class="feature-highlight">同类产品3倍生成速度</li>
+                    <li>√2.5倍 Starter 套餐用量</li>
+                    <li>约支持 1~2 个 OpenClawagent</li>
+                    <li>支持主流的编程工具，并持续扩展中</li>
+                    <li>支持图像理解、联网搜索 MCP</li>
+                    <li>生成图像和语音</li>
+                    <li>每周可使用额度为「每5小时额度」的10倍</li>
+                </ul>
+            </article>
+
+            <!-- Max-极速版 -->
+            <article class="card speed-tier">
+                <span class="top-badge">超值之选</span>
+                <h3 class="card-title">Max-极速版</h3>
+                <p class="card-subtitle">极速畅用</p>
+                <div class="card-price"><span class="currency">¥</span>99</div>
+                <p class="card-billing">每月，按月订阅</p>
+                <button class="btn-subscribe speed-btn" aria-label="订阅 Max-极速版">立即订阅</button>
+                <div class="usage-highlight">4500次模型调用/5小时</div>
+                <div class="model-hint">提示：请将模型切换为 MiniMax-M2.7-highspeed</div>
+                <ul class="features-list">
+                    <li>支持最新 MiniMax-M2.7-highspeed，约100TPS 极速推理</li>
+                    <li class="feature-highlight">同类产品3倍生成速度</li>
+                    <li>√7.5倍 Starter 套餐用量</li>
+                    <li>约支持 2~3 个 OpenClawagent</li>
+                    <li>支持主流的编程工具，并持续扩展中</li>
+                    <li>支持图像理解、联网搜索 MCP</li>
+                    <li>生成图片、语音、音乐和视频</li>
+                    <li>每周可使用额度为「每5小时额度」的10倍</li>
+                </ul>
+            </article>
+
+            <!-- Ultra-极速版 -->
+            <article class="card speed-tier ultra">
+                <span class="top-badge">旗舰之选</span>
+                <h3 class="card-title">Ultra-极速版</h3>
+                <p class="card-subtitle">极速畅用</p>
+                <div class="card-price"><span class="currency">¥</span>449</div>
+                <p class="card-billing">每月，按月订阅</p>
+                <button class="btn-subscribe ultra-btn" aria-label="订阅 Ultra-极速版">立即订阅</button>
+                <div class="usage-highlight">30000次模型调用/5小时</div>
+                <div class="model-hint">提示：请将模型切换为 MiniMax-M2.7-highspeed</div>
+                <ul class="features-list">
+                    <li>支持最高 MiniMax-M2.7-highspeed，约100TPS 极速推理</li>
+                    <li class="feature-highlight">同类产品3倍生成速度</li>
+                    <li>√50倍 Starter 套餐用量</li>
+                    <li>约支持 4~5 个 OpenClawagent</li>
+                    <li>支持主流的编程工具，并持续扩展中</li>
+                    <li>支持图像理解、联网搜索 MCP</li>
+                    <li>生成图片、语音、音乐和视频</li>
+                    <li>每周可使用额度为「每5小时额度」的10倍</li>
+                </ul>
+            </article>
+        </div>
+
+        <!-- ========== 分隔线 ========== -->
+        <div class="section-divider">
+            <span>标准版系列</span>
+        </div>
+
+        <!-- ========== 标准版套餐 ========== -->
+        <div class="section-label standard">
+            <div class="icon-wrapper">💎</div>
+            <span class="label-text">标准版系列</span>
+            <span class="label-badge" style="background:rgba(91,156,245,0.2);color:#8cb8f5;">性价比</span>
+        </div>
+
+        <div class="cards-grid standard-tier">
+            <!-- Starter -->
+            <article class="card standard-tier">
+                <h3 class="card-title">Starter</h3>
+                <p class="card-subtitle">适合入门级开发场景，满足基础开发需求</p>
+                <div class="card-price"><span class="currency">¥</span>15</div>
+                <p class="card-billing">每月，按月订阅</p>
+                <button class="btn-subscribe standard-btn" aria-label="订阅 Starter">立即订阅</button>
+                <div class="usage-highlight">600次模型调用/5小时</div>
+                <ul class="features-list">
+                    <li>支持最新 MiniMax M2.7，正常约50TPS，低峰时段100TPS</li>
+                    <li>约支持 1 个 OpenClawagent</li>
+                    <li>支持主流的编程工具，并持续扩展中</li>
+                    <li>支持图像理解、联网搜索 MCP</li>
+                    <li>每周可使用额度为「每5小时额度」的10倍</li>
+                </ul>
+            </article>
+
+            <!-- Plus -->
+            <article class="card standard-tier">
+                <h3 class="card-title">Plus</h3>
+                <p class="card-subtitle">适合专业开发场景，满足复杂开发任务需求</p>
+                <div class="card-price"><span class="currency">¥</span>25</div>
+                <p class="card-billing">每月，按月订阅</p>
+                <button class="btn-subscribe standard-btn" aria-label="订阅 Plus">立即订阅</button>
+                <div class="usage-highlight">1500次模型调用/5小时</div>
+                <ul class="features-list">
+                    <li>支持最新 MiniMax M2.7，正常约50TPS，低峰时段100TPS</li>
+                    <li>√2.5倍 Starter 套餐用量</li>
+                    <li>约支持 1~2 个 OpenClawagent</li>
+                    <li>支持主流的编程工具，并持续扩展中</li>
+                    <li>支持图像理解、联网搜索 MCP</li>
+                    <li>生成图像和语音</li>
+                    <li>每周可使用额度为「每5小时额度」的10倍</li>
+                </ul>
+            </article>
+
+            <!-- Max -->
+            <article class="card standard-tier">
+                <h3 class="card-title">Max</h3>
+                <p class="card-subtitle">适合高级开发场景，满足大量编程辅助需求</p>
+                <div class="card-price"><span class="currency">¥</span>59</div>
+                <p class="card-billing">每月，按月订阅</p>
+                <button class="btn-subscribe standard-btn" aria-label="订阅 Max">立即订阅</button>
+                <div class="usage-highlight">4500次模型调用/5小时</div>
+                <ul class="features-list">
+                    <li>支持最新 MiniMax M2.7，正常约50TPS，低峰时段100TPS</li>
+                    <li>√7.5倍 Starter 套餐用量</li>
+                    <li>约支持 2~3 个 OpenClawagent</li>
+                    <li>支持主流的编程工具，并持续扩展中</li>
+                    <li>支持图像理解、联网搜索 MCP</li>
+                    <li>生成图片、语音、音乐和视频</li>
+                    <li>每周可使用额度为「每5小时额度」的10倍</li>
+                </ul>
+            </article>
+        </div>
+
+    </div>
+
+    <!-- ── 轻量交互：按钮点击反馈 ── -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const allButtons = document.querySelectorAll('.btn-subscribe');
+            allButtons.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    // 简单的点击涟漪反馈
+                    const ripple = document.createElement('span');
+                    ripple.style.cssText = `
+                            position: absolute;
+                            border-radius: 50%;
+                            background: rgba(255,255,255,0.35);
+                            transform: scale(0);
+                            animation: ripple-anim 0.55s ease-out forwards;
+                            pointer-events: none;
+                            left: ${e.offsetX || e.clientX - btn.getBoundingClientRect().left}px;
+                            top: ${e.offsetY || e.clientY - btn.getBoundingClientRect().top}px;
+                            width: 20px;
+                            height: 20px;
+                            margin-left: -10px;
+                            margin-top: -10px;
+                          `;
+                    btn.style.position = btn.style.position || 'relative';
+                    btn.style.overflow = 'hidden';
+                    btn.appendChild(ripple);
+                    ripple.addEventListener('animationend', () => ripple.remove());
+
+                    // 模拟订阅提示
+                    const cardTitle = btn.closest('.card')?.querySelector('.card-title')
+                        ?.textContent || '套餐';
+                    const priceEl = btn.closest('.card')?.querySelector('.card-price')?.textContent ||
+                        '';
+                    console.log(`📦 订阅意向：${cardTitle.trim()} — ${priceEl.trim()}/月`);
+                });
+            });
+
+            // 注入涟漪动画关键帧
+            const styleSheet = document.createElement('style');
+            styleSheet.textContent = `
+                    @keyframes ripple-anim {
+                      to { transform: scale(12); opacity: 0; }
+                    }
+                  `;
+            document.head.appendChild(styleSheet);
+        });
+    </script>
+</body>
+</html>
