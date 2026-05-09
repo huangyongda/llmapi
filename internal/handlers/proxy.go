@@ -130,6 +130,11 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 	hasXApiKey := c.Request.Header.Get("x-api-key") != ""
 	authHeader := c.Request.Header.Get("Authorization")
 
+	//User-Agent 包含WorkBuddy
+	if hasXApiKey == true && authHeader != "" && strings.Contains(c.Request.UserAgent(), "WorkBuddy") {
+		hasXApiKey = false
+	}
+
 	if hasXApiKey {
 		targetHost = config.AppConfig.LLM.APIURL
 	} else if strings.HasPrefix(authHeader, "Bearer ") {

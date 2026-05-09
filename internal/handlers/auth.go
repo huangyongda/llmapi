@@ -482,12 +482,6 @@ func (h *AuthHandler) APIKeyAuth() gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 		xapiKey := c.GetHeader("x-api-key")
 
-		if authHeader == "" && xapiKey == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
-			c.Abort()
-			return
-		}
-
 		apiKeyValue := ""
 		if authHeader != "" {
 			// 提取API Key
