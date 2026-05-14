@@ -693,11 +693,11 @@
                 keyVaults: {
                     openai: {
                         apiKey: apiKey,
-                        baseURL: 'https://api.nengpa.com/v1'
+                        baseURL: 'https://api.nengpa.com'
                     }
                 }
             };
-            const url = 'https://lobechat784894.zeabur.app/chat?settings=' + encodeURIComponent(JSON.stringify(settings));
+            const url = 'https://api.nengpa.com/chatbox/#/?settings=' + '{"key":"'+apiKey+'","url":"https://api.nengpa.com"}';
             window.open(url, '_blank');
         }
 
