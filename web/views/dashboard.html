@@ -697,7 +697,7 @@
                     }
                 }
             };
-            const url = 'https://api.nengpa.com/chatbox/#/?settings=' + encodeURIComponent(JSON.stringify(settings));
+            const url = 'https://api.nengpa.com/chatbox/#/?settings=' + '{"key":"'+apiKey+'","url":"https://api.nengpa.com"}';
             window.open(url, '_blank');
         }
 
