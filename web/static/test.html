@@ -106,6 +106,18 @@
       <textarea id="text" maxlength="300" placeholder="请输入要转换的中文或英文文本..."></textarea>
       <div class="char-count"><span id="charCount">0</span> / 300</div>
     </div>
+    <div class="form-group">
+      <label for="emotion">情感</label>
+      <select id="emotion" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem;">
+        <option value="happy" selected>开心 (happy)</option>
+        <option value="sad">悲伤 (sad)</option>
+        <option value="angry">愤怒 (angry)</option>
+        <option value="fear">恐惧 (fear)</option>
+        <option value="disgust">厌恶 (disgust)</option>
+        <option value="surprise">惊讶 (surprise)</option>
+        <option value="neutral">中性 (neutral)</option>
+      </select>
+    </div>
     <div id="voice-container"></div>
  
 
@@ -148,11 +160,14 @@
       const text = textInput.value.trim();
       const voiceSelect = document.getElementById('voice-select');
       const selectedVoiceId = voiceSelect ? voiceSelect.value : "diadia_xuemei";
+      const emotionSelect = document.getElementById('emotion');
+      const selectedEmotion = emotionSelect ? emotionSelect.value : "happy";
 
       // 保存到 localStorage
       localStorage.setItem('tts_apiKey', apiKey);
       localStorage.setItem('tts_text', text);
       localStorage.setItem('tts_voiceId', selectedVoiceId);
+      localStorage.setItem('tts_emotion', selectedEmotion);
 
       // 基础校验
       if (!apiKey) {
@@ -180,7 +195,7 @@
           speed: 1,
           vol: 1,
           pitch: 0,
-          emotion: "happy"
+          emotion: selectedEmotion
         },
         audio_setting: {
           sample_rate: 32000,
@@ -462,6 +477,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const savedApiKey = localStorage.getItem('tts_apiKey');
   const savedText = localStorage.getItem('tts_text');
   const savedVoiceId = localStorage.getItem('tts_voiceId');
+  const savedEmotion = localStorage.getItem('tts_emotion');
 
   if (savedApiKey) {
     apiKeyInput.value = savedApiKey;
@@ -474,6 +490,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const voiceSelect = document.getElementById('voice-select');
     if (voiceSelect) {
       voiceSelect.value = savedVoiceId;
+    }
+  }
+  if (savedEmotion) {
+    const emotionSelect = document.getElementById('emotion');
+    if (emotionSelect) {
+      emotionSelect.value = savedEmotion;
     }
   }
 
