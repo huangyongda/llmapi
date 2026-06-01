@@ -36,6 +36,7 @@ func (h *ModelsHandler) GetModels(c *gin.Context) {
 		"MiniMax-M2.1": "custom",
 		"MiniMax-M2.5": "custom",
 		"MiniMax-M2.7": "custom",
+		"MiniMax-M3":   "custom",
 	}
 	level, _ := c.Get("level")
 	if level == 2 {

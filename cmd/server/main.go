@@ -399,7 +399,7 @@ func SetWeight(apiKeys []string, apiWeights []float32, Selector *tools.DynamicWe
 			continue
 		}
 
-		current_interval_usage_count := 0
+		current_interval_usage_count := 100
 		for _, modelRemain := range respInfo.ModelRemains {
 			model_name := modelRemain.ModelName
 			//model_name 不包含 "MiniMax-M" 跳过
