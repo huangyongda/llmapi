@@ -121,6 +121,7 @@
                         <p>baseUrl: <b style="color: rgb(8, 0, 255);">https://api.nengpa.com/v1</b> 这是openai格式</p>
                     </h2>
                     <p><b>注意:</b>记得替换 base_url 比如:【https://api.minimaxi.com/anthropic】 >>替换 【https://api.nengpa.com/anthropic】 </p>
+                    <p><a  href="https://www.yuque.com/yongda/kb/gg6s3s71o28fauci?singleDoc# 《使用教程》">使用教程</a></p>
                 </div>
             </section>
             <section class="stats-section" id="feedbackSection" style="display: none;">
@@ -128,7 +129,7 @@
                      <h2 style="color: red;">好评 额度+100, 30字好评 额度+200 直接闲鱼找我</h2>
                 </div>
             </section>
-            <section class="stats-section" >
+            <section class="stats-section"  id="gonggao"  style="display: none;">
                 <div class="stat-card-full">
                      <h2 style="color: red;">公告： 由于咸鱼号 Lvmvnv 被禁言21天。无法回复内容。如有疑问，请联系请联系我（手机/微信 13631630195,
                         另外一个咸鱼号<a href="https://m.tb.cn/h.RY0MKyC?tk=uIDk5IlbuGQ HU591" target="_blank">momo006</a>，拼多多店铺：<a href="https://mobile.yangkeduo.com/goods2.html?goods_id=934261213792&pdd_bapp_share_channel=wechat&pdd_bapp_share_content=other&pdd_bapp_share_from=other
@@ -142,7 +143,7 @@
                 <div class="stat-card-full">
                     <h3>过期时间</h3>
                     <p class="stat-value" id="expiresAt">-</p>
-                    <button id="renewBtn" class="btn btn-primary xufei">续费</button>
+                    <button id="renewBtn" class="btn btn-primary xufei" style="display: none;">续费</button>
                 </div>
                 <!-- 续费面板 -->
                 <div id="renewalPanel" class="renewal-panel">
@@ -485,7 +486,10 @@
                     //xufei
                 }
                 if ( userData.remark == '批量卖出') {
-                    document.querySelector('.xufei').style.display = 'none';
+                    
+                } else {
+                    document.querySelector('.xufei').style.display = 'inline';
+                    document.getElementById('gonggao').style.display = 'block';
                 }
                 if (userData.use_glm == 1) {
                     document.querySelector('.xufei').style.display = 'none';
