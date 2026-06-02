@@ -872,7 +872,8 @@ main {
         }
 
         .models-section .model-tag {
-            background: #e0e0e0;
+            background: #28a745;
+            color: white;
             padding: 8px 16px;
             border-radius: 20px;
             font-size: 14px;
