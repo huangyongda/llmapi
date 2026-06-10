@@ -166,8 +166,23 @@ func ResponseLogger() gin.HandlerFunc {
 			}
 		}
 
+		if result.Usage.InputTokens == 0 {
+			input_token_num := c.GetInt("input_token_num")
+			// fmt.Println("Usage.InputTokens is 0, set to:", input_token_num)
+			result.Usage.InputTokens = input_token_num
+		}
+		if result.Usage.OutputTokens == 0 {
+			OutputTokens := CountTokens(llmResponse)
+			// fmt.Println("Usage.InputTokens is 0, set to:", OutputTokens)
+			result.Usage.OutputTokens = OutputTokens
+		}
+
 		// fmt.Println("json result:", result.Usage)
 		go SaveResponseUsage(userId, apiKeyId, result, post_model_name, latencyMs, RequestID)
+
+		if result.Usage.TotalTokens == 0 {
+			result.Usage.TotalTokens = result.Usage.InputTokens + result.Usage.OutputTokens
+		}
 
 		curUseApiKey, _ := c.Get("cur_use_api_key")
 		//key后缀（7个字符）
@@ -203,6 +218,13 @@ func ResponseLogger() gin.HandlerFunc {
 
 		fmt.Println("requestID:", requestID, ",model:", post_model_name, ",retry_num:", retry_num, ",httpStatusCode:", httpStatusCode, ",userId:", userId, ",keySuffix:", keySuffix, ",Time:", time.Now().Format("2006-01-02 15:04:05"), ",Current Usage:", useNum, ",llmResponse:", llmResponse)
 	}
+}
+
+func CountTokens(text string) int {
+	if len(text) == 0 {
+		return 0
+	}
+	return len(text) / 4
 }
 
 // 综合处理函数

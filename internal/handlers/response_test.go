@@ -15,3 +15,12 @@ func TestNumber(t *testing.T) {
 		fmt.Println(test)
 	}
 }
+
+func TestCountTokens(t *testing.T) {
+
+	str := "dddd"
+	total := CountTokens(str)
+
+	fmt.Println(total)
+
+}

@@ -113,6 +113,7 @@ func (h *ProxyHandler) ProxyHandler(c *gin.Context) {
 		c.String(http.StatusBadRequest, "Failed to read request body")
 		return
 	}
+	c.Set("input_token_num", CountTokens(string(requestBody)))
 
 	// 第一次解析
 	var param1 RequestBody
