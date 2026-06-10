@@ -146,7 +146,7 @@
                 <div class="stat-card-full">
                     <h3>过期时间</h3>
                     <p class="stat-value" id="expiresAt">-</p>
-                    <button id="renewBtn" class="btn btn-primary xufei" style="display: none;">续费</button>
+                    <button id="renewBtn" class="btn btn-primary xufei" style="display: none;">续费/订阅</button>
                 </div>
                 <!-- 续费面板 -->
                 <div id="renewalPanel" class="renewal-panel">
@@ -199,7 +199,7 @@
                         <h3 class="stat-value" id="progressText2Week">剩余0%</h3>
                     </div>
                    
-                    <div class="stat-card">
+                    <div class="stat-card" id="nextTimeBox"  >
                         <h3>下一次刷新</h3>
                         <p class="stat-value" id="nextTime">-</p>
                     </div>
@@ -428,6 +428,33 @@
 
                 // Update user info
                 document.getElementById('expiresAt').textContent = userData.expires_at || '永久有效';
+
+                // 获取元素引用，避免重复查询
+                const expiresAtElement = document.getElementById('expiresAt');
+
+                // 判断是否过期
+                let isExpired = false;
+
+                if (userData.expires_at) {
+                    // 将字符串转换为 Date 对象进行比较
+                    const expiresDate = new Date(userData.expires_at);
+                    const now = new Date();
+                    isExpired = expiresDate < now;
+                    
+                    if (isExpired) {
+                        expiresAtElement.textContent = '已过期';
+                        //nextTimeBox隐藏
+                        document.getElementById('nextTimeBox').style.display = 'none';
+                        //字体颜色变成红色
+                        expiresAtElement.style.color = 'red';
+                    } else {
+                        expiresAtElement.textContent = userData.expires_at;
+                    }
+                } else {
+                    expiresAtElement.textContent = '永久有效';
+                }
+
+                console.log(isExpired);
 
                 // Update stats
                 // document.getElementById('availableRequests').textContent = usageData.request_limit - usageData.request_used;
