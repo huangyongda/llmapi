@@ -470,17 +470,9 @@
                 }
                 
 
-                if (userData.request_limit >= 1000) {
+                if (userData.request_limit >= 800) {
                     document.querySelector('.month-card .price').textContent = '¥ 29.99';
                     document.querySelector('.quarter-card .price').textContent = '¥ 85';
-                }
-                if ( userData.level == 2 && userData.request_limit >= 500) {
-                    document.querySelector('.month-card .price').textContent = '¥ 29.99';
-                    document.querySelector('.quarter-card .price').textContent = '¥ 85';
-                }
-                if ( userData.level == 2 && userData.request_limit >= 1000) {
-                    document.querySelector('.month-card .price').textContent = '¥ 43.99';
-                    document.querySelector('.quarter-card .price').textContent = '¥ 125';
                 }
                 if ( userData.has_weekly_limit == 1 && userData.request_limit >= 5000) {
                     document.querySelector('.month-card .price').textContent = '¥ 29.99';
